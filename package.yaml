@@ -40,6 +40,19 @@ executables:
     dependencies:
     - icfpc2020
 
+  solution:
+    main:                solution.hs
+    source-dirs:         app-solution
+    ghc-options:
+    - -rtsopts
+    - -static
+    - -threaded
+    cc-options: -static
+    ld-options: -static -pthread
+    dependencies:
+    - icfpc2020
+    - process
+
 tests:
   icfpc2020-test:
     main:                spec.hs
