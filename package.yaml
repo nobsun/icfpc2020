@@ -21,20 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/nobs
 
 dependencies:
 - base >= 4.7 && < 5
-- unicode-show
-- markdown-unlit
-- doctest
-- bytestring
-- utf8-string
-- hspec
-- main-tester
-- mtl
-- free
-- comonad
-- recursion-schemes
-- vector
 
 library:
+  dependencies:
+  - containers
   source-dirs: src
 
 executables:
@@ -51,17 +41,6 @@ executables:
 tests:
   icfpc2020-test:
     main:                spec.hs
-    source-dirs:         test
-    # ghc-options:
-    # - -threaded
-    # - -rtsopts
-    # - -with-rtsopts=-N
-    dependencies:
-    - icfpc2020
-    - hspec
-
-  icfpc2020-doctest:
-    main:                doctests.hs
     source-dirs:         test
     # ghc-options:
     # - -threaded
