@@ -1,7 +1,1 @@
-.stack-work/
-icfpc2020.cabal
-error.log
-core
-*.hi
-*.o
-*~
+.stack-work

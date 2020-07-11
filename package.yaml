@@ -1,71 +1,43 @@
-name:                icfpc2020
-version:             0.1.0.0
-github:              "nobsun/icfpc2020"
-license:             BSD3
-author:              "Nobuo Yamashita"
-maintainer:          "nobsun@sampou.org"
-copyright:           "Copyright: (c) 2020 Nobuo Yamashita"
+name:                icfpc-mmxx-starterkit-haskell
+# Please adjust the following fields.
+# version:             0.1.0.0
+# github:              "icfpcontest2020/starterkit-haskell"
+# license:             BSD3
+# author:              "Author name here"
+# maintainer:          "example@example.com"
+# copyright:           "2020 Author name here"
 
-extra-source-files:
-- README.md
-- ChangeLog.md
+# extra-source-files:
+# - README.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
-# category:            Experiment
+# category:            Web
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/nobsun/icfpc2020#readme>
+description:         Please see <https://github.com/icfpcontest2020/starterkit-haskell>
 
 dependencies:
 - base >= 4.7 && < 5
-- unicode-show
-- markdown-unlit
-- doctest
-- bytestring
-- utf8-string
-- hspec
-- main-tester
-- mtl
-- free
-- comonad
-- recursion-schemes
-- vector
+- http-conduit >= 2.3
 
-library:
-  source-dirs: src
+# In a more realistic setting, you will probably want to write a library that
+# is declared here and use it as a dependency for your binary.
+# library
+#   source-dirs: src
 
 executables:
-  icfpc2020:
+  main:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
+    - -threaded
+    - -O2
     - -rtsopts
-    # - -threaded
-    # - -with-rtsopts=-N
-    dependencies:
-    - icfpc2020
-
-tests:
-  icfpc2020-test:
-    main:                spec.hs
-    source-dirs:         test
-    # ghc-options:
-    # - -threaded
-    # - -rtsopts
-    # - -with-rtsopts=-N
-    dependencies:
-    - icfpc2020
-    - hspec
-
-  icfpc2020-doctest:
-    main:                doctests.hs
-    source-dirs:         test
-    # ghc-options:
-    # - -threaded
-    # - -rtsopts
-    # - -with-rtsopts=-N
-    dependencies:
-    - icfpc2020
+    - -with-rtsopts=-N
+    # Here you can add dependencies specific to your binary, including your
+    # own libarary.
+    # dependencies:
+    # - icfpc-mmxx-starterkit-haskell
