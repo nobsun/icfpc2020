@@ -48,7 +48,9 @@ executables:
     - -static
     - -threaded
     cc-options: -static
-    ld-options: -static -pthread
+    ld-options:
+    - -static
+    - -pthread
     dependencies:
     - icfpc2020
     - process
