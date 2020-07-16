@@ -10,7 +10,7 @@ run server playerKey = do
                          "curl"
                          ["-s", "-o", tempFile,
                           "-w", "%{http_code}",
-                          "-d", "playerKey=" ++ playerKey,
+                          "-d", playerKey,
                           server]
                          Nothing
                          Nothing
