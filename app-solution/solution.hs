@@ -1,19 +1,37 @@
 import System.Environment (getArgs)
-import System.Process (readProcess)
--- import System.Exit (ExitCode (..))
+import System.IO (hClose, hGetLine)
+import System.Process (runInteractiveProcess, waitForProcess)
+import System.Exit (ExitCode (..), exitSuccess)
 
 run :: String -> String -> IO ()
 run server playerKey = do
-  let cmd = ("curl", ["-s", "-d", "playerKey=" ++ playerKey, server])
-  out <- uncurry readProcess cmd ""
-  putStrLn $ "Server response: " ++ out
-  {-
+  let tempFile = "output.txt"
+  (inpH, outH, errH, ph) <- runInteractiveProcess
+                         "curl"
+                         ["-s", "-o", tempFile,
+                          "-w", "%{http_code}",
+                          "-d", "playerKey=" ++ playerKey,
+                          server]
+                         Nothing
+                         Nothing
+  hClose inpH
+  hClose errH
+
+  ec <- waitForProcess ph
   case ec of
     ExitSuccess   -> return ()
-    ExitFailure c -> fail $
-                     "command failed with code: " ++ show c ++
-                     ", cmd = " ++ unwords (uncurry (:) cmd)
-   -}
+    ExitFailure c -> do
+      putStrLn $ "run error code: " ++ show c
+      exitSuccess
+
+  httpCode <- take 3 <$> hGetLine outH
+  body <- readFile tempFile
+  if httpCode /= "200"
+    then  putStr $
+          unlines ["Unexpected server response:",
+                   "HTTP code: " ++ httpCode,
+                   "Response body: " ++ body]
+    else  putStrLn $ "Server response: " ++ body
 
 main :: IO ()
 main = do
