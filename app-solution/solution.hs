@@ -5,7 +5,7 @@ import System.Exit (ExitCode (..), exitSuccess)
 
 run :: String -> String -> IO ()
 run server playerKey = do
-  let tempFile = "output.txt"
+  let tempFile = "/tmp/output.txt"
   (inpH, outH, errH, ph) <- runInteractiveProcess
                          "curl"
                          ["-s", "-o", tempFile,
