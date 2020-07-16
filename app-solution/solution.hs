@@ -1,16 +1,19 @@
 import System.Environment (getArgs)
-import System.Process (rawSystem)
-import System.Exit (ExitCode (..))
+import System.Process (readProcess)
+-- import System.Exit (ExitCode (..))
 
 run :: String -> String -> IO ()
 run server playerKey = do
   let cmd = ("curl", ["-s", "-d", "playerKey=" ++ playerKey, server])
-  ec <- uncurry rawSystem cmd
+  out <- uncurry readProcess cmd ""
+  putStrLn $ "Server response: " ++ out
+  {-
   case ec of
     ExitSuccess   -> return ()
     ExitFailure c -> fail $
                      "command failed with code: " ++ show c ++
                      ", cmd = " ++ unwords (uncurry (:) cmd)
+   -}
 
 main :: IO ()
 main = do
