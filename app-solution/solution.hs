@@ -27,11 +27,11 @@ run server playerKey = do
   httpCode <- take 3 <$> hGetLine outH
   body <- readFile tempFile
   if httpCode /= "200"
-    then  putStr $
-          unlines ["Unexpected server response:",
-                   "HTTP code: " ++ httpCode,
-                   "Response body: " ++ body]
-    else  putStrLn $ "Server response: " ++ body
+    then do putStr $ unlines
+              ["Unexpected server response:",
+               "HTTP code: " ++ httpCode]
+            putStr $ "Response body: " ++ body
+    else    putStr $ "Server response: " ++ body
 
 main :: IO ()
 main = do
