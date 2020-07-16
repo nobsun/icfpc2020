@@ -4,7 +4,7 @@ import System.Exit (ExitCode (..))
 
 run :: String -> String -> IO ()
 run server playerKey = do
-  let cmd = ("curl", ["-s", server ++ "?playerKey=" ++ playerKey])
+  let cmd = ("curl", ["-s", "-d", "playerKey=" ++ playerKey, server])
   ec <- uncurry rawSystem cmd
   case ec of
     ExitSuccess   -> return ()
