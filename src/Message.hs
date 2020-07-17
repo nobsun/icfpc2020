@@ -105,4 +105,4 @@ eval (Ap {}) = undefined
 
 _example0 :: Maybe (Expr, [Token])
 _example0 =
-  runParser expr [TAp, TAp, TArg Sum, TArg $ Num 1, TArg $ Num 2]
+  runParser expr [TAp, TAp, TArg Add, TArg $ Num 1, TArg $ Num 2]
