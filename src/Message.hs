@@ -1,5 +1,5 @@
 module Message (
-  Node (..),
+  Prim (..),
   Token (..),
   Expr (..),
   toExpr,
@@ -12,7 +12,7 @@ import qualified Data.Tree as T
 
 -----
 
-data Node
+data Prim
   = Num Int
   | Var Int
   | Eq | Lt          -- 2 args
@@ -31,22 +31,22 @@ data Node
   | If0              -- 3 arg
   | Draw             -- 1 arg
   | Chkb             -- 2 arg
-  | MulDraw          -- 1 arg
+  | MultiDraw        -- 1 arg
   deriving (Eq, Show)
 
 data Token
-  = TArg Node
+  = TPrim Prim
   | TAp
   deriving (Eq, Show)
 
 data Expr
-  = Arg Node
+  = Prim Prim
   | Ap Expr Expr
   deriving (Eq, Show)
 
-cataExpr :: (Node -> t) -> (t -> t -> t) -> Expr -> t
+cataExpr :: (Prim -> t) -> (t -> t -> t) -> Expr -> t
 cataExpr f g = u
-  where u (Arg a) = f a
+  where u (Prim a) = f a
         u (Ap l r) = g (u l) (u r)
 
 -----
@@ -76,33 +76,47 @@ expr :: Parser Expr
 expr = do
   t <- token
   case t of
-    TArg n -> pure (Arg n)
+    TPrim n -> pure (Prim n)
     TAp    -> Ap <$> expr <*> expr
 
 toExpr :: [Token] -> Maybe Expr
 toExpr = (fst <$>) . runParser (expr <* eof)
 
--- data Value = Val Node | Fun (Value -> Value)
+-- data Value = Val Prim | Fun (Value -> Value)
 
 -- FORMULA --> WHNF
 
 {-
 eval :: Expr -> Expr
-eval e@(Arg _)  = e
+eval e@(Prim _)  = e
 eval (Ap {}) = undefined
   where
     eval1 e0@(Ap f e) = case eval f of
       w@(Ap {}) -> Ap w e1
-      Arg n    -> case n of
+      Prim n    -> case n of
         Succ     -> case e1 of
-          Arg (Num i) -> Arg $ Num $ succ i
-          _           -> Ap (Arg Succ) e1
+          Prim (Num i) -> Prim $ Num $ succ i
+          _           -> Ap (Prim Succ) e1
         Pred     -> case e1 of
-          Arg (Num i) -> Arg $ Num $ pred i
-          _           -> Ap (Arg Pred) e1
+          Prim (Num i) -> Prim $ Num $ pred i
+          _           -> Ap (Prim Pred) e1
+        {- Mod -}
+        {- Dem -}
+        Neg      -> case e1 of
+          Prim (Num i) -> Prim $ Num $ negate i
+          _           -> Ap (Prim Neg) e1
+        Pow2     -> case e1 of
+          Prim (Num i) -> Prim $ Num $ 2^i
+          _            -> Ap (Prim Pow2) e1
         I        -> eval e
-        Car      -> eval $ Ap e $ Arg T
-        Cdr      -> eval $ Ap e $ Arg F
+        Car      -> eval $ Ap e $ Prim T
+        Cdr      -> eval $ Ap e $ Prim F
+        {- Nil -} {- 引数が IsNil 以外のときは? -}
+        IsNil    -> case e1 of
+          Prim Nil     -> Prim T
+          _            -> Prim F
+        {- Draw -}
+        {- MultiDraw -}
         _        -> e0
       where
         e1 = eval e
@@ -122,12 +136,12 @@ draw = putStr . T.drawTree . toDataTree
 
 _example0 :: Maybe (Expr, [Token])
 _example0 =
-  runParser expr [TAp, TAp, TArg Add, TArg $ Num 1, TArg $ Num 2]
+  runParser expr [TAp, TAp, TPrim Add, TPrim $ Num 1, TPrim $ Num 2]
 
 _drawExample41 :: IO ()
-_drawExample41 = let Just e = toExpr [ TAp, TAp, TArg B, TAp, TArg B, TAp, TAp, TArg S, TAp
-                                     , TAp, TArg B, TAp, TArg B, TAp, TArg Cons, TArg (Num 0)
-                                     , TAp, TAp, TArg C, TAp, TAp, TArg B, TArg B, TArg Cons
-                                     , TAp, TAp, TArg C, TArg Cons, TArg Nil, TAp,  TAp, TArg C
-                                     , TArg Cons,  TArg Nil, TAp, TArg C, TArg Cons]
+_drawExample41 = let Just e = toExpr [ TAp, TAp, TPrim B, TAp, TPrim B, TAp, TAp, TPrim S, TAp
+                                     , TAp, TPrim B, TAp, TPrim B, TAp, TPrim Cons, TPrim (Num 0)
+                                     , TAp, TAp, TPrim C, TAp, TAp, TPrim B, TPrim B, TPrim Cons
+                                     , TAp, TAp, TPrim C, TPrim Cons, TPrim Nil, TAp,  TAp, TPrim C
+                                     , TPrim Cons,  TPrim Nil, TAp, TPrim C, TPrim Cons]
                  in draw e
