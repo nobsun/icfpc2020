@@ -32,7 +32,6 @@ data Node
   | Draw             -- 1 arg
   | Chkb             -- 2 arg
   | MulDraw          -- 1 arg
-  | Apply            -- 2 arg
   deriving (Eq, Show)
 
 data Token
@@ -114,7 +113,7 @@ eval (Ap {}) = undefined
 toDataTree :: Expr -> T.Tree String
 toDataTree = cataExpr f g
   where f a = T.Node (show a) []
-        g l r = T.Node (show Apply) [l, r]
+        g l r = T.Node "App" [l, r]
 
 draw :: Expr -> IO ()
 draw = putStr . T.drawTree . toDataTree
