@@ -13,17 +13,14 @@ import Control.Monad.Trans.State (StateT, runStateT, get, put)
 data Node
   = Num Int
   | Var Int
-  | Eq
-  | Lt
-  | Succ
-  | Pred
-  | Sum
-  | Mul
-  | Div
-  | T
-  | F
-  | Mod
-  | Dem
+  | Eq | Lt
+  | Succ | Pred
+  | Sum | Mul | Div
+  | Mod | Dem
+  | T {- True, K combinator -} | F {- False, flip K -}
+  | S | C | B | I
+  | Po2
+  | Cons | Car | Cdr
   deriving (Eq, Show)
 
 data Token
