@@ -42,6 +42,8 @@ executables:
 
   solution:
     main:                solution.hs
+    other-modules:
+    - CurlCmd
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
