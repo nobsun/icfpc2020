@@ -14,6 +14,7 @@ data Node
   = Num Int
   | Var Int
   | Eq
+  | Lt
   | Succ
   | Pred
   | Sum
@@ -21,6 +22,8 @@ data Node
   | Div
   | T
   | F
+  | Mod
+  | Dem
   deriving (Eq, Show)
 
 data Token
