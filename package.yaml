@@ -42,6 +42,8 @@ executables:
 
   solution:
     main:                solution.hs
+    other-modules:
+    - CurlCmd
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
@@ -54,6 +56,24 @@ executables:
     dependencies:
     - icfpc2020
     - process
+
+  # libcurl からリンクされている krb5 ライブラリの
+  # *.a イメージが Debian では提供されていなかったので
+  # static link できなかった
+  solution-dyn:
+    main:                solution-dyn.hs
+    other-modules:
+    - CurlLib
+    - CurlCmd
+    source-dirs:         app-solution
+    ghc-options:
+    - -rtsopts
+    - -static
+    - -threaded
+    dependencies:
+    - icfpc2020
+    - process
+    - curl
 
 tests:
   icfpc2020-test:
