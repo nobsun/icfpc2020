@@ -27,6 +27,9 @@ ghc-options:
 library:
   dependencies:
   - containers
+  - transformers
+  exposed-modules:
+  - Message
   source-dirs: src
 
 executables:
