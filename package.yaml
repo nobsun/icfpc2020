@@ -27,6 +27,9 @@ ghc-options:
 library:
   dependencies:
   - containers
+  - transformers
+  exposed-modules:
+  - Message
   source-dirs: src
 
 executables:
@@ -85,3 +88,14 @@ tests:
     # - -with-rtsopts=-N
     dependencies:
     - icfpc2020
+
+  icfpc2020-doctest:
+    main:                doctests.hs
+    source-dirs:         test
+    # ghc-options:
+    # - -threaded
+    # - -rtsopts
+    # - -with-rtsopts=-N
+    dependencies:
+    - icfpc2020
+    - doctest
