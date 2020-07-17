@@ -22,5 +22,6 @@ solution ターゲットは static link しているので、開発環境のバ�
 
 `./solution/solution` を置き換えることで、 submit するプログラムを更新できます。
 
+- Docker でのビルド用 `./docker-update-submission.sh`
 - stack ユーザー用 `./stack-update-submission.sh`
 - cabal V1 ユーザー用 `./v1-update-submission.sh`
