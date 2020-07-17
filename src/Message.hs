@@ -131,4 +131,4 @@ _drawExample41 = let Just e = toExpr [ TAp, TAp, TArg B, TAp, TArg B, TAp, TAp, 
                                      , TAp, TAp, TArg C, TAp, TAp, TArg B, TArg B, TArg Cons
                                      , TAp, TAp, TArg C, TArg Cons, TArg Nil, TAp,  TAp, TArg C
                                      , TArg Cons,  TArg Nil, TAp, TArg C, TArg Cons]
-             in draw e
+                 in draw e
