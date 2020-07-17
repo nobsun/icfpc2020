@@ -2,4 +2,4 @@
 
 set -e
 
-./solution/solution "$@"
+./solution/solution-dyn "$@"
