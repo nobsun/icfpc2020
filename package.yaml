@@ -35,16 +35,6 @@ library:
   source-dirs: src
 
 executables:
-  icfpc2020:
-    main:                Main.hs
-    source-dirs:         app
-    ghc-options:
-    - -rtsopts
-    # - -threaded
-    # - -with-rtsopts=-N
-    dependencies:
-    - icfpc2020
-
   solution:
     main:                solution.hs
     other-modules:
