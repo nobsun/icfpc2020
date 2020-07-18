@@ -7,12 +7,12 @@ module TextParser
   ) where
 
 import Control.Applicative
-import Control.Monad
-import Data.List
+import Control.Monad (void)
+-- import Data.List
 import Data.Attoparsec.ByteString.Lazy
-  (Parser, parse, eitherResult)
+  (parse, eitherResult)
 import Data.Attoparsec.ByteString.Char8 hiding (parse, eitherResult)
-import qualified Data.ByteString.Builder as BB
+-- import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as L8
 
 import Message
@@ -48,7 +48,7 @@ parseLines = eitherResult . parse (lineP `sepBy` endOfLine)
 lineP :: Parser (Int,[Token])
 lineP = do
   n <- lineNoP
-  string " = "
+  void $ string " = "
   ts <- tokenP `sepBy` char ' '
   return (n, ts)
 
@@ -89,4 +89,3 @@ tokenP = choice
   , string "f"     *> pure (TPrim F)
   , string "i"     *> pure (TPrim Message.I)
    ]
-
