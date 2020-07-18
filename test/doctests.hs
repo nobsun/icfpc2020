@@ -8,6 +8,7 @@ main = doctest
   , "src/Draw.hs"
   , "src/Eval.hs"
   , "src/GalaxyTxt.hs"
+  , "src/ListDesugar.hs"
   , "src/Message.hs"
   , "src/Modulate.hs"
   , "src/TextParser.hs"
