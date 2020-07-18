@@ -8,6 +8,7 @@ import qualified Data.Set as Set
 import Data.Set (Set)
 
 import Message
+import Modulate (modulate_, demodulate)
 
 -- 変数の参照を解決する
 resolve :: IntMap Expr -> Expr -> Expr
@@ -94,6 +95,20 @@ reduce send env = f
           ys' <- asList ys
           return $ x : ys'
 
+    asMBits :: Expr -> m String
+    asMBits e = do
+      e' <- f e
+      case e' of
+        PAp (MBits s) [] -> return s
+        _ -> fail $ "asMBits: " ++ show e'
+
+    asArity0 :: Expr -> m Prim
+    asArity0 e = do
+      e' <- f e
+      case e' of
+        PAp prim [] -> return prim
+        _ -> fail $ "asArith0: " ++ show e'
+
     redPrim prim@(Num _) _ = return $ PAp prim []
     redPrim prim@(Var _) _ = return $ PAp prim []
     redPrim Eq [x1, x2] = do
@@ -122,8 +137,14 @@ reduce send env = f
       x1' <- asNum x1
       x2' <- asNum x2
       return $ PAp (Num (x1' `quot` x2')) []
-    redPrim Mod [_x] = undefined
-    redPrim Dem [_x] = undefined
+    redPrim Mod [x] = do
+      x' <- asArity0 x
+      let mbits v = PAp (MBits v) []
+      either (fail . ("reduce: mod: " ++)) (return . mbits) $ modulate_ $ Prim x'
+    redPrim Dem [x] = do
+      s <- asMBits x
+      dx <- either (fail . ("reduce: dem: " ++)) return $ demodulate s
+      PAp <$> asArity0 dx <*> pure []
     redPrim Send [x] = send =<< f x
     redPrim Neg [x] = do
       x' <- asNum x
