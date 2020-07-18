@@ -175,3 +175,20 @@ pwr2Def = Ap (Ap (Prim S) (Ap (Ap (Prim C) (Ap (Prim Eq) (Prim (Num 0)))) (Prim 
 
 chkbDef :: Expr
 chkbDef = Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim C)) (Ap (Ap (Prim B) (Ap (Prim C) (Ap (Prim C) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Ap (Ap (Prim S) (Prim I)) (Prim I)))) (Prim Lt)))) (Prim Eq))))) (Ap (Ap (Prim S) (Prim Mul)) (Prim I))))) (Prim Nil)))) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Prim Cons))) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Prim Cons))) (Ap (Prim C) (Prim Div))))) (Ap (Prim C) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim B)) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim B)) (Prim Add))) (Prim Neg)))) (Ap (Ap (Prim B) (Ap (Prim S) (Prim Mul))) (Prim Div)))))))) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim B)) (Prim Chkb))) (Ap (Ap (Prim C) (Prim Add)) (Prim (Num 2)))))
+
+
+data NFValue
+  = NFPAp Prim [NFValue]
+  | NFPicture (Set (Int,Int))
+  deriving (Eq, Show)
+
+reduceNF :: (Monad m, MonadFail m) => (Value -> m Value) -> IntMap Expr -> Expr -> m NFValue
+reduceNF send env = normalize send env <=< reduce send env
+
+normalize :: forall m. (Monad m, MonadFail m) => (Value -> m Value) -> IntMap Expr -> Value -> m NFValue
+normalize send env = f
+  where
+    f (PAp prim args) = do
+      args' <- mapM (f <=< reduce send env) args
+      return $ NFPAp prim args'
+    f (Picture xs) = return $ NFPicture xs
