@@ -39,6 +39,12 @@ data Value
 -- >>> reduce pure IntMap.empty (Prim (Num 42))
 -- PAp (Num 42) []
 --
+-- >>> :{
+-- let env = IntMap.fromList [(2048, Prim (Num 42))]
+-- in reduce pure env (Prim (Var 2048))
+-- :}
+-- PAp (Num 42) []
+--
 -- >>> reduce pure IntMap.empty (Ap (Prim Pred) (Ap (Ap (Prim Add) (Prim (Num 1))) (Prim (Num 2))))
 -- PAp (Num 2) []
 --
@@ -46,12 +52,6 @@ data Value
 -- let env = IntMap.fromList [(2048, Ap (Prim F) (Prim (Var 2048)))]
 --     exp = Ap (Ap (Prim F) (Prim (Var 2048))) (Prim (Num 42))
 -- in reduce pure env exp
--- :}
--- PAp (Num 42) []
---
--- >>> :{
--- let env = IntMap.fromList [(2048, Prim (Num 42))]
--- in reduce pure env (Prim (Var 2048))
 -- :}
 -- PAp (Num 42) []
 --
