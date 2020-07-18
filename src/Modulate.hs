@@ -8,14 +8,12 @@ module Modulate
 import Prelude hiding (take, takeWhile)
 
 import Control.Applicative
-import Control.Monad
 import qualified Data.List as L
 import Data.Attoparsec.ByteString.Lazy
-  (Parser, parse, eitherResult)
+  (parse, eitherResult)
 import Data.Attoparsec.ByteString.Char8 as C8 hiding (parse, eitherResult)
 
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as L8 hiding (take, takeWhile)
 
 
@@ -43,10 +41,11 @@ import Message
 -- >>> modulate (Ap (Ap (Prim Cons) (Prim (Num 1))) (Ap (Ap (Prim Cons) (Prim (Num 2))) (Prim Nil)))
 -- "1101100001110110001000"
 modulate :: Expr -> String
-modulate (Prim (Num n)) = modulateNum n
-modulate (Prim Nil)     = "00"
-modulate (Ap(Prim  Cons) e)    = "11" ++ modulate e
-modulate (Ap e1 e2)     = modulate e1 ++ modulate e2
+modulate (Prim (Num n))     = modulateNum n
+modulate (Prim Nil)         = "00"
+modulate (Ap(Prim  Cons) e) = "11" ++ modulate e
+modulate (Ap e1 e2)         = modulate e1 ++ modulate e2
+modulate e                  = error "unsupported Expr found!: " ++ show e
 
 
 modulateNum :: Int -> String
@@ -97,7 +96,7 @@ demodNumP :: Parser Expr
 demodNumP = do
   sig <- (string "01" *> pure 1) <|> (string "10" *> pure (-1))
   len <- (4*) . B.length <$> takeWhile (=='1')
-  char '0'
+  _ <-char '0'
   if len == 0
     then pure (Prim (Num 0))
     else Prim . Num <$> (*sig) . fst . head . readInt 2 (`elem`("01"::String)) toInt . B.unpack <$> take len
