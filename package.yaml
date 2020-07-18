@@ -37,6 +37,7 @@ library:
   - bytestring
   - containers
   - transformers
+  - process
   exposed-modules:
   - Eval
   - Message
