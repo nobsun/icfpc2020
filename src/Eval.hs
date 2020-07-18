@@ -202,6 +202,15 @@ pwr2Def = Ap (Ap (Prim S) (Ap (Ap (Prim C) (Ap (Prim Eq) (Prim (Num 0)))) (Prim 
 chkbDef :: Expr
 chkbDef = Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim C)) (Ap (Ap (Prim B) (Ap (Prim C) (Ap (Prim C) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Ap (Ap (Prim S) (Prim I)) (Prim I)))) (Prim Lt)))) (Prim Eq))))) (Ap (Ap (Prim S) (Prim Mul)) (Prim I))))) (Prim Nil)))) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Prim Cons))) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Prim Cons))) (Ap (Prim C) (Prim Div))))) (Ap (Prim C) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim B)) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim B)) (Prim Add))) (Prim Neg)))) (Ap (Ap (Prim B) (Ap (Prim S) (Prim Mul))) (Prim Div)))))))) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim B)) (Prim Chkb))) (Ap (Ap (Prim C) (Prim Add)) (Prim (Num 2)))))
 
+modemDef :: ([Int], Expr)
+modemDef = ([0], Ap (Prim Dem) (Ap (Prim Mod) (Prim (LVar 0))))
+
+f38Def :: ([Int], Expr)
+f38Def = ([2,0], Ap (Ap (Ap (Prim If0) (Ap (Prim Car) (Prim (LVar 0)))) (Ap (Ap (Prim Cons) (Ap (Prim Modem) (Ap (Prim Car) (Ap (Prim Cdr) (Prim (LVar 0)))))) (Ap (Ap (Prim Cons) (Ap (Prim MultiDraw) (Ap (Prim Car) (Ap (Prim Cdr) (Ap (Prim Cdr) (Prim (LVar 0))))))) (Prim Nil)))) (Ap (Ap (Ap (Prim Interact) (Prim (LVar 2))) (Ap (Prim Modem) (Ap (Prim Car) (Ap (Prim Cdr) (Prim (LVar 0)))))) (Ap (Prim Send) (Ap (Prim Car) (Ap (Prim Cdr) (Ap (Prim Cdr) (Prim (LVar 0))))))))
+
+interactDef :: ([Int], Expr)
+interactDef = ([2,4,3], Ap (Ap (Prim F38) (Prim (LVar 2))) (Ap (Ap (Prim (LVar 2)) (Prim (LVar 4))) (Prim (LVar 3))))
+
 
 data NFValue
   = NFPAp Prim [NFValue]
