@@ -3,8 +3,7 @@ import Test.DocTest
 
 main :: IO ()
 main = doctest
-  [ "src/Lib.hs"
-  , "src/TextParser.hs"
+  [ "src/TextParser.hs"
   , "src/Modulate.hs"
   ]
 
