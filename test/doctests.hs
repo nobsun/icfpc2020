@@ -5,7 +5,10 @@ main :: IO ()
 main = doctest
   [ "-package attoparsec"
   , "-isrc"
-  , "src/TextParser.hs"
-  , "src/Modulate.hs"
   , "src/Draw.hs"
+  , "src/Eval.hs"
+  , "src/GalaxyTxt.hs"
+  , "src/Message.hs"
+  , "src/Modulate.hs"
+  , "src/TextParser.hs"
   ]
