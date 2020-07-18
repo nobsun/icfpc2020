@@ -3,7 +3,8 @@ import Test.DocTest
 
 main :: IO ()
 main = doctest
-  [ "-isrc"
+  [ "-package attoparsec"
+  , "-isrc"
   , "src/TextParser.hs"
   , "src/Modulate.hs"
   , "src/Draw.hs"
