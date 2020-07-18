@@ -12,7 +12,7 @@ import Control.Monad (void)
 import Data.Attoparsec.ByteString.Lazy
   (Parser, parse, eitherResult)
 import Data.Attoparsec.ByteString.Char8
-  (endOfLine, sepBy, char, string, decimal, signed)
+  (endOfLine, endOfInput, sepBy, char, string, decimal, signed)
 -- import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as L8
 
@@ -42,7 +42,7 @@ parseToken = (listDesugar =<<) . eitherResult . parse (tokenP `sepBy` char ' ')
 
 parseLine :: L8.ByteString -> Either String (Int,[M.Token])
 parseLine in_ = do
-  (n, ts) <- eitherResult $ parse (lineP <* endOfLine) in_
+  (n, ts) <- eitherResult $ parse (lineP <* endOfInput) in_
   (,) n <$> listDesugar ts
 
 parseLines :: L8.ByteString -> Either String [(Int,[M.Token])]
