@@ -20,7 +20,7 @@ import Numeric (showIntAtBase, readInt)
 import Message
 
 
--- XXX
+-- | XXX
 -- >>> modulate (Prim (Num 0))
 -- "010"
 --
@@ -48,10 +48,10 @@ modulate e                  = error "modulate: unknown expr to modulate!: " ++ s
 
 modulateNum :: Int -> String
 modulateNum n =
-    sn ++ ['1'|_<-[1..len]] ++ ('0': (if n>0 then num else ""))
+    sn ++ ['1'|_<-[1..len]] ++ ('0': (if n==0 then "" else num))
   where
     sn = if signum n >= 0 then "01" else "10"
-    len = length $ takeWhile (>0) $ iterate (`div`16) n
+    len = length $ takeWhile (>0) $ iterate (`div`16) (abs n)
     num = reverse $ take (4*len) $ (reverse $ showIntAtBase 2 toChar (abs n) "") ++ (repeat '0')
 
 toChar :: Int -> Char
@@ -63,7 +63,7 @@ toInt '0' = 0
 toInt _   = 1
 
 
--- XXX
+-- | XXX
 -- >>> demodulate (L8.pack "00")
 -- Right (Prim Nil)
 --
