@@ -43,7 +43,7 @@ modulate (Prim (Num n))     = modulateNum n
 modulate (Prim Nil)         = "00"
 modulate (Ap(Prim  Cons) e) = "11" ++ modulate e
 modulate (Ap e1 e2)         = modulate e1 ++ modulate e2
-modulate e                  = error "unsupported Expr found!: " ++ show e
+modulate e                  = error "modulate: unknown expr to modulate!: " ++ show e
 
 
 modulateNum :: Int -> String
