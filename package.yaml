@@ -26,6 +26,8 @@ ghc-options:
 
 library:
   dependencies:
+  - attoparsec
+  - bytestring
   - containers
   - transformers
   exposed-modules:
