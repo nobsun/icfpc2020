@@ -41,6 +41,7 @@ library:
   - Eval
   - Message
   - Modulate
+  - ListDesugar
   - TextParser
   - GalaxyTxt
   source-dirs: src
