@@ -90,6 +90,9 @@ data Value
 -- >>> reduce pure IntMap.empty (Ap (Prim Succ) (Prim (Num 300)))
 -- PAp (Num 301) []
 --
+-- >>> reduce pure IntMap.empty (Ap (Prim Succ) (Prim (Num 1023)))
+-- PAp (Num 1024) []
+--
 -- >>> reduce pure IntMap.empty (Ap (Prim Succ) (Prim (Num (-2))))
 -- PAp (Num (-1)) []
 --
@@ -108,6 +111,9 @@ data Value
 --
 -- >>> reduce pure IntMap.empty (Ap (Prim Pred) (Prim (Num 300)))
 -- PAp (Num 299) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Pred) (Prim (Num 1024)))
+-- PAp (Num 1023) []
 --
 -- >>> reduce pure IntMap.empty (Ap (Prim Pred) (Prim (Num (-2))))
 -- PAp (Num (-3)) []
