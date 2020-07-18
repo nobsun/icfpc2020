@@ -95,46 +95,6 @@ expr = do
 toExpr :: [Token] -> Maybe Expr
 toExpr = (fst <$>) . runParser (expr <* eof)
 
--- data Value = Val Prim | Fun (Value -> Value)
-
--- FORMULA --> WHNF
-
-{-
-eval :: Expr -> Expr
-eval e@(Prim _)  = e
-eval (Ap {}) = undefined
-  where
-    eval1 e0@(Ap f e) = case eval f of
-      w@(Ap {}) -> Ap w e1
-      Prim n    -> case n of
-        Succ     -> case e1 of
-          Prim (Num i) -> Prim $ Num $ succ i
-          _           -> Ap (Prim Succ) e1
-        Pred     -> case e1 of
-          Prim (Num i) -> Prim $ Num $ pred i
-          _           -> Ap (Prim Pred) e1
-        {- Mod -}
-        {- Dem -}
-        Neg      -> case e1 of
-          Prim (Num i) -> Prim $ Num $ negate i
-          _           -> Ap (Prim Neg) e1
-        Pow2     -> case e1 of
-          Prim (Num i) -> Prim $ Num $ 2^i
-          _            -> Ap (Prim Pow2) e1
-        I        -> eval e
-        Car      -> eval $ Ap e $ Prim T
-        Cdr      -> eval $ Ap e $ Prim F
-        {- Nil -} {- 引数が IsNil 以外のときは? -}
-        IsNil    -> case e1 of
-          Prim Nil     -> Prim T
-          _            -> Prim F
-        {- Draw -}
-        {- MultiDraw -}
-        _        -> e0
-      where
-        e1 = eval e
- -}
-
 -----
 
 toDataTree :: Expr -> T.Tree String
