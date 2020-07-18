@@ -16,8 +16,9 @@ import Data.Attoparsec.ByteString.Char8
 -- import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as L8
 
-import Message (Prim (..), Token)
+import Message (Prim (..))
 import qualified Message as M
+import ListDesugar (Token (..), desugar)
 
 -- | XXX
 --
@@ -36,15 +37,22 @@ import qualified Message as M
 -- >>> parseLine (L8.pack "galaxy = :1338")
 -- Right (-1,[TPrim (Var 1338)])
 --
-parseToken :: L8.ByteString -> Either String [Token]
-parseToken = eitherResult . parse (tokenP `sepBy` char ' ')
+parseToken :: L8.ByteString -> Either String [M.Token]
+parseToken = (listDesugar =<<) . eitherResult . parse (tokenP `sepBy` char ' ')
 
-parseLine :: L8.ByteString -> Either String (Int,[Token])
-parseLine = eitherResult . parse lineP
+parseLine :: L8.ByteString -> Either String (Int,[M.Token])
+parseLine in_ = do
+  (n, ts) <- eitherResult $ parse lineP in_
+  (,) n <$> listDesugar ts
 
-parseLines :: L8.ByteString -> Either String [(Int,[Token])]
-parseLines = eitherResult . parse (lineP `sepBy` endOfLine)
+parseLines :: L8.ByteString -> Either String [(Int,[M.Token])]
+parseLines in_ = do
+  ps <- eitherResult $ parse (lineP `sepBy` endOfLine) in_
+  let desugar_ (n, ts) = (,) n <$> listDesugar ts
+  mapM desugar_ ps
 
+listDesugar :: [Token] -> Either String [M.Token]
+listDesugar = maybe (Left "list desugar error") return . desugar
 
 lineP :: Parser (Int,[Token])
 lineP = do
@@ -61,33 +69,37 @@ lineNoP =
 
 tokenP :: Parser Token
 tokenP =
-  string "ap"  *> pure M.TAp  <|>
-  M.TPrim <$>
-  ( Num <$> (signed decimal)      <|>
-    (char ':' >> Var <$> decimal) <|>
-    string "eq"  *> pure Eq       <|>
-    string "lt"  *> pure Lt       <|>
-    string "inc" *> pure Succ     <|>
-    string "dec" *> pure Pred     <|>
-    string "add" *> pure Add      <|>
-    string "mul" *> pure Mul      <|>
-    string "div" *> pure Div      <|>
-    string "mod" *> pure Mod      <|>
-    string "dem" *> pure Dem      <|>
-    string "send"  *> pure Send   <|>
-    string "neg"   *> pure Neg    <|>
-    string "pwr2"  *> pure Pow2   <|>
-    string "cons"  *> pure Cons   <|>
-    string "nil"   *> pure Nil    <|>
-    string "car"   *> pure Car    <|>
-    string "cdr"   *> pure Cdr    <|>
-    string "if0"   *> pure If0    <|>
-    string "draw"  *> pure Draw   <|>
-    string "checkerboard"   *> pure Chkb       <|>
-    string "multipledraw"   *> pure MultiDraw  <|>
-    string "s"     *> pure S      <|>
-    string "c"     *> pure C      <|>
-    string "b"     *> pure B      <|>
-    string "t"     *> pure T      <|>
-    string "f"     *> pure F      <|>
-    string "i"     *> pure I )
+  TokenM <$>
+  (string "ap"  *> pure M.TAp  <|>
+   M.TPrim <$>
+   ( Num <$> (signed decimal)      <|>
+     (char ':' >> Var <$> decimal) <|>
+     string "eq"  *> pure Eq       <|>
+     string "lt"  *> pure Lt       <|>
+     string "inc" *> pure Succ     <|>
+     string "dec" *> pure Pred     <|>
+     string "add" *> pure Add      <|>
+     string "mul" *> pure Mul      <|>
+     string "div" *> pure Div      <|>
+     string "mod" *> pure Mod      <|>
+     string "dem" *> pure Dem      <|>
+     string "send"  *> pure Send   <|>
+     string "neg"   *> pure Neg    <|>
+     string "pwr2"  *> pure Pow2   <|>
+     string "cons"  *> pure Cons   <|>
+     string "nil"   *> pure Nil    <|>
+     string "car"   *> pure Car    <|>
+     string "cdr"   *> pure Cdr    <|>
+     string "if0"   *> pure If0    <|>
+     string "draw"  *> pure Draw   <|>
+     string "checkerboard"   *> pure Chkb       <|>
+     string "multipledraw"   *> pure MultiDraw  <|>
+     string "s"     *> pure S      <|>
+     string "c"     *> pure C      <|>
+     string "b"     *> pure B      <|>
+     string "t"     *> pure T      <|>
+     string "f"     *> pure F      <|>
+     string "i"     *> pure I )) <|>
+  string "(" *> pure ParenL      <|>
+  string ")" *> pure ParenR      <|>
+  string "," *> pure Comma
