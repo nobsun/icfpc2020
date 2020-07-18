@@ -35,25 +35,42 @@ data Value
   deriving (Eq, Show)
 
 
--- | XXX
+-- | Numbers
 -- >>> reduce pure IntMap.empty (Prim (Num 42))
 -- PAp (Num 42) []
 --
+-- | Get Variable's Value from Env
 -- >>> :{
 -- let env = IntMap.fromList [(2048, Prim (Num 42))]
 -- in reduce pure env (Prim (Var 2048))
 -- :}
 -- PAp (Num 42) []
 --
+-- | Calculate Number
 -- >>> reduce pure IntMap.empty (Ap (Prim Pred) (Ap (Ap (Prim Add) (Prim (Num 1))) (Prim (Num 2))))
 -- PAp (Num 2) []
 --
+-- | Lazy Evaluation
 -- >>> :{
 -- let env = IntMap.fromList [(2048, Ap (Prim F) (Prim (Var 2048)))]
 --     exp = Ap (Ap (Prim F) (Prim (Var 2048))) (Prim (Num 42))
 -- in reduce pure env exp
 -- :}
 -- PAp (Num 42) []
+--
+-- | Equality
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num 0))) (Prim (Num 0)))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num 0))) (Prim (Num 1)))
+-- PAp F []
+--
+-- | Less Than
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num 0))) (Prim (Num 0)))
+-- PAp F []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num 0))) (Prim (Num 1)))
+-- PAp T []
 --
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
