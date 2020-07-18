@@ -15,6 +15,7 @@ import qualified Data.Tree as T
 data Prim
   = Num Int
   | Var Int
+  | LineVar Int
   | Eq | Lt          -- 2 args
   | Succ | Pred      -- 1 arg
   | Add | Mul | Div  -- 2 arg
