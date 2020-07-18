@@ -2,6 +2,7 @@
 module Eval where
 
 import Control.Monad hiding (ap)
+import Data.List (foldl')
 import qualified Data.IntMap.Lazy as IntMap
 import Data.IntMap (IntMap)
 import qualified Data.Set as Set
@@ -39,7 +40,7 @@ data Value
 -- :}
 -- PAp (Num 42) []
 --
-reduce :: forall m. (Monad m, MonadFail m) => (Value -> m Value) -> IntMap Expr -> Expr -> m Value
+reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
     f :: Expr -> m Value
@@ -146,7 +147,10 @@ reduce send env = f
     redPrim Dem [x] = do
       s <- asMBits x
       either (fail . ("reduce: dem: " ++)) f $ demodulate s
-    redPrim Send [x] = send =<< f x
+    redPrim Send [x] = do
+      let valueExpr (PAp p es)  =  return $ foldl' Ap (Prim p) es
+          valueExpr  _          =  fail "reduce: send: cannot convert picture state to expr"
+      f =<< send =<< valueExpr =<< f x
     redPrim Neg [x] = do
       x' <- asNum x
       return $ PAp (Num (- x')) []
@@ -204,10 +208,10 @@ data NFValue
   | NFPicture (Set (Int,Int))
   deriving (Eq, Show)
 
-reduceNF :: (Monad m, MonadFail m) => (Value -> m Value) -> IntMap Expr -> Expr -> m NFValue
+reduceNF :: (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m NFValue
 reduceNF send env = normalize send env <=< reduce send env
 
-normalize :: forall m. (Monad m, MonadFail m) => (Value -> m Value) -> IntMap Expr -> Value -> m NFValue
+normalize :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Value -> m NFValue
 normalize send env = f
   where
     f (PAp prim args) = do
