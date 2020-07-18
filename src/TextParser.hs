@@ -78,6 +78,7 @@ tokenP =
    M.TPrim <$>
    ( Num <$> (signed decimal)      <|>
      (char ':' >> Var <$> decimal) <|>
+     (char 'x' >> LVar <$> decimal) <|>
      string "eq"  *> pure Eq       <|>
      string "lt"  *> pure Lt       <|>
      string "inc" *> pure Succ     <|>
