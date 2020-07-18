@@ -46,28 +46,28 @@ parseToken = (listDesugar =<<) . eitherResult . parse (tokenP `sepBy` char ' ')
 
 parseLine :: L8.ByteString -> Either String (Int,[M.Token])
 parseLine in_ = do
-  (n, ts) <- eitherResult $ parse (lineP <* endOfInput) in_
+  (n, ts) <- eitherResult $ parse (defineP <* endOfInput) in_
   (,) n <$> listDesugar ts
 
 parseLines :: L8.ByteString -> Either String [(Int,[M.Token])]
 parseLines in_ = do
-  ps <- eitherResult $ parse (lineP `sepBy` endOfLine) in_
+  ps <- eitherResult $ parse (defineP `sepBy` endOfLine) in_
   let desugar_ (n, ts) = (,) n <$> listDesugar ts
   mapM desugar_ ps
 
 listDesugar :: [Token] -> Either String [M.Token]
 listDesugar = maybe (Left "list desugar error") return . desugar
 
-lineP :: Parser (Int,[Token])
-lineP = do
-  n <- lineNoP
+defineP :: Parser (Int,[Token])
+defineP = do
+  n <- varNoP
   void $ string " = "
   ts <- tokenP `sepBy` char ' '
   return (n, ts)
 
 
-lineNoP :: Parser Int
-lineNoP =
+varNoP :: Parser Int
+varNoP =
   char ':' *> decimal          <|>
   string "galaxy" *> pure galaxyKey
 
