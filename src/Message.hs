@@ -1,5 +1,6 @@
 module Message (
   Prim (..),
+  arity,
   Token (..),
   Expr (..),
   toExpr,
@@ -34,6 +35,38 @@ data Prim
   | Chkb             -- 2 arg
   | MultiDraw        -- 1 arg
   deriving (Eq, Show)
+
+arity :: Prim -> Int
+arity (Num _) = 0
+arity (Var _) = 0
+arity (LineVar _) = 0
+arity Eq = 2
+arity Lt = 2
+arity Succ = 1
+arity Pred = 1
+arity Add = 1
+arity Mul = 1
+arity Div = 1
+arity Mod = 1
+arity Dem = 1
+arity Send = 1
+arity Neg = 1
+arity S = 3
+arity C = 3
+arity B = 3
+arity T = 2
+arity F = 2
+arity Pow2 = 1
+arity I = 1
+arity Cons = 3
+arity Car = 1
+arity Cdr = 1
+arity Nil = 1
+arity IsNil = 1
+arity If0 = 1
+arity Draw = 1
+arity Chkb = 2
+arity MultiDraw = 1
 
 data Token
   = TPrim Prim
