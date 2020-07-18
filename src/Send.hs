@@ -1,5 +1,5 @@
 module Send (
-  runSend,
+  send,
   ) where
 
 import System.Process (readProcess)
@@ -7,8 +7,8 @@ import System.Process (readProcess)
 import Message (Prim (Cons, Nil, Num), Expr (Ap, Prim))
 import Modulate (modulate_, demodulate)
 
-runSend :: Expr -> IO Expr
-runSend e = do
+send :: Expr -> IO Expr
+send e = do
   me <- either (fail . ("runSend: request: modulate: " ++)) return $ modulate_ e
   rbody <- readProcess
            "curl"
@@ -19,7 +19,6 @@ runSend e = do
            ""
   either (fail . ("runSend: response: demodulate: " ++)) return $ demodulate rbody
 
-
 _exampleSend0 :: IO Expr
 _exampleSend0 =
-  runSend (Ap (Ap (Prim Cons) (Prim $ Num 0)) (Prim Nil))
+  send (Ap (Ap (Prim Cons) (Prim $ Num 0)) (Prim Nil))
