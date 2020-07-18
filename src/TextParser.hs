@@ -10,13 +10,14 @@ import Control.Applicative
 import Control.Monad (void)
 -- import Data.List
 import Data.Attoparsec.ByteString.Lazy
-  (parse, eitherResult)
-import Data.Attoparsec.ByteString.Char8 hiding (parse, eitherResult)
+  (Parser, parse, eitherResult)
+import Data.Attoparsec.ByteString.Char8
+  (endOfLine, sepBy, char, string, decimal, signed)
 -- import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as L8
 
-import Message
-
+import Message (Prim (..), Token)
+import qualified Message as M
 
 -- | XXX
 --
@@ -54,37 +55,37 @@ lineP = do
 
 
 lineNoP :: Parser Int
-lineNoP = char ':' *> decimal
-  <|> (string "galaxy" *> pure (-1))
-
+lineNoP =
+  char ':' *> decimal          <|>
+  string "galaxy" *> pure (-1)
 
 tokenP :: Parser Token
-tokenP = choice
-  [ string "ap"  *> pure TAp
-  , TPrim . Num <$> (signed decimal)
-  , char ':' >> TPrim . Var <$> decimal
-  , string "inc" *> pure (TPrim Succ)
-  , string "dec" *> pure (TPrim Pred)
-  , string "add" *> pure (TPrim Add)
-  , string "mul" *> pure (TPrim Mul)
-  , string "div" *> pure (TPrim Div)
-  , string "mod" *> pure (TPrim Mod)
-  , string "dem" *> pure (TPrim Dem)
-  , string "send"  *> pure (TPrim Send)
-  , string "neg"   *> pure (TPrim Neg)
-  , string "pwr"   *> pure (TPrim Pow2)
-  , string "cons"  *> pure (TPrim Cons)
-  , string "nil"   *> pure (TPrim Nil)
-  , string "car"   *> pure (TPrim Car)
-  , string "cdr"   *> pure (TPrim Cdr)
-  , string "if0"   *> pure (TPrim If0)
-  , string "draw"  *> pure (TPrim Draw)
-  , string "checkerboard"   *> pure (TPrim Chkb)
-  , string "multipledraw"   *> pure (TPrim MultiDraw)
-  , string "s"     *> pure (TPrim S)
-  , string "c"     *> pure (TPrim C)
-  , string "b"     *> pure (TPrim B)
-  , string "t"     *> pure (TPrim T)
-  , string "f"     *> pure (TPrim F)
-  , string "i"     *> pure (TPrim Message.I)
-   ]
+tokenP =
+  string "ap"  *> pure M.TAp  <|>
+  M.TPrim <$>
+  ( Num <$> (signed decimal)      <|>
+    (char ':' >> Var <$> decimal) <|>
+    string "inc" *> pure Succ     <|>
+    string "dec" *> pure Pred     <|>
+    string "add" *> pure Add      <|>
+    string "mul" *> pure Mul      <|>
+    string "div" *> pure Div      <|>
+    string "mod" *> pure Mod      <|>
+    string "dem" *> pure Dem      <|>
+    string "send"  *> pure Send   <|>
+    string "neg"   *> pure Neg    <|>
+    string "pwr"   *> pure Pow2   <|>
+    string "cons"  *> pure Cons   <|>
+    string "nil"   *> pure Nil    <|>
+    string "car"   *> pure Car    <|>
+    string "cdr"   *> pure Cdr    <|>
+    string "if0"   *> pure If0    <|>
+    string "draw"  *> pure Draw   <|>
+    string "checkerboard"   *> pure Chkb       <|>
+    string "multipledraw"   *> pure MultiDraw  <|>
+    string "s"     *> pure S      <|>
+    string "c"     *> pure C      <|>
+    string "b"     *> pure B      <|>
+    string "t"     *> pure T      <|>
+    string "f"     *> pure F      <|>
+    string "i"     *> pure I )
