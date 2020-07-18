@@ -80,6 +80,11 @@ tokenP =
    ( Num <$> (signed decimal)      <|>
      (char ':' >> Var <$> decimal) <|>
      (char 'x' >> LVar <$> decimal) <|>
+     string "checkerboard"   *> pure Chkb       <|>
+     string "multipledraw"   *> pure MultiDraw  <|>
+     string "modem" *> pure Modem  <|>
+     string "f38"   *> pure F38    <|>
+     string "interact"       *> pure Interact   <|>
      string "eq"  *> pure Eq       <|>
      string "lt"  *> pure Lt       <|>
      string "inc" *> pure Succ     <|>
@@ -99,11 +104,6 @@ tokenP =
      string "cdr"   *> pure Cdr    <|>
      string "if0"   *> pure If0    <|>
      string "draw"  *> pure Draw   <|>
-     string "checkerboard"   *> pure Chkb       <|>
-     string "multipledraw"   *> pure MultiDraw  <|>
-     string "modem" *> pure Modem  <|>
-     string "f38"   *> pure F38    <|>
-     string "interact"       *> pure Interact   <|>
      string "s"     *> pure S      <|>
      string "c"     *> pure C      <|>
      string "b"     *> pure B      <|>
@@ -119,3 +119,13 @@ parseMessage :: L8.ByteString -> Either String M.Expr
 parseMessage s = do
   ts <- parseTokens s
   maybe (Left $ "message: invalid token sequence: " ++ show ts) Right $ M.toExpr ts
+
+
+_modem :: Either String M.Expr
+_modem = parseMessage "ap dem ap mod x0"
+
+_f38 :: Either String M.Expr
+_f38 = parseMessage "ap ap ap if0 ap car x0 ( ap modem ap car ap cdr x0 , ap multipledraw ap car ap cdr ap cdr x0 ) ap ap ap interact x2 ap modem ap car ap cdr x0 ap send ap car ap cdr ap cdr x0"
+
+_interact :: Either String M.Expr
+_interact = parseMessage "ap ap f38 x2 ap ap x2 x4 x3"
