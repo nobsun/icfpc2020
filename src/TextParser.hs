@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module TextParser (
-  parseToken
+module TextParser
+  ( parseLines
+  , parseLine
+  , parseToken
   ) where
 
 import Control.Applicative
@@ -17,16 +19,66 @@ import Message
 
 
 -- | XXX
+--
 -- >>> parseToken (L8.pack "ap ap cons 2 ap ap cons 7 nil")
 -- Right [TAp,TAp,TPrim Cons,TPrim (Num 2),TAp,TAp,TPrim Cons,TPrim (Num 7),TPrim Nil]
+--
+-- >>> parseToken (L8.pack "ap ap cons x0 x1")
+-- Right [TAp,TAp,TPrim Cons,TPrim (Var 0),TPrim (Var 1)]
+--
+-- >>> parseToken (L8.pack "ap ap ap c add 1 2")
+-- Right [TAp,TAp,TAp,TPrim C,TPrim Add,TPrim (Num 1),TPrim (Num 2)]
+--
 parseToken :: L8.ByteString -> Either String [Token]
 parseToken = eitherResult . parse (tokenP `sepBy` char ' ')
 
+parseLine :: L8.ByteString -> Either String (Int,[Token])
+parseLine = eitherResult . parse lineP
+
+parseLines :: L8.ByteString -> Either String [(Int,[Token])]
+parseLines = eitherResult . parse (lineP `sepBy` endOfLine)
+
+
+lineP :: Parser (Int,[Token])
+lineP = do
+  n <- lineNoP
+  string " = "
+  ts <- tokenP `sepBy` char ' '
+  return (n, ts)
+
+
+lineNoP :: Parser Int
+lineNoP = char ':' *> decimal
+
+
 tokenP :: Parser Token
-tokenP = msum
-  [ string "ap" *> pure TAp
-  , TPrim . Num <$> decimal
-  , string "cons" *> pure (TPrim Cons)
-  , string "nil" *> pure (TPrim Nil)
-  ]
+tokenP = choice
+  [ string "ap"  *> pure TAp
+  , TPrim . Num <$> (signed decimal)
+  , char 'x' >> TPrim . Var <$> decimal
+  , string "inc" *> pure (TPrim Succ)
+  , string "dec" *> pure (TPrim Pred)
+  , string "add" *> pure (TPrim Add)
+  , string "mul" *> pure (TPrim Mul)
+  , string "div" *> pure (TPrim Div)
+  , string "mod" *> pure (TPrim Mod)
+  , string "dem" *> pure (TPrim Dem)
+  , string "send"  *> pure (TPrim Send)
+  , string "neg"   *> pure (TPrim Neg)
+  , string "pwr"   *> pure (TPrim Pow2)
+  , string "cons"  *> pure (TPrim Cons)
+  , string "nil"   *> pure (TPrim Nil)
+  , string "car"   *> pure (TPrim Car)
+  , string "cdr"   *> pure (TPrim Cdr)
+  , string "if0"   *> pure (TPrim If0)
+  , string "draw"  *> pure (TPrim Draw)
+  , string "checkerboard"   *> pure (TPrim Chkb)
+  , string "multipledraw"   *> pure (TPrim MultiDraw)
+  , string "s"     *> pure (TPrim S)
+  , string "c"     *> pure (TPrim C)
+  , string "b"     *> pure (TPrim B)
+  , string "t"     *> pure (TPrim T)
+  , string "f"     *> pure (TPrim F)
+  , string "i"     *> pure (TPrim Message.I)
+   ]
 
