@@ -35,6 +35,10 @@ data Prim
   | Draw             -- 1 arg
   | Chkb             -- 0 arg
   | MultiDraw        -- 1 arg
+
+  | Modem            -- 1 arg
+  | F38              -- 2 arg
+  | Interact         -- 3 arg
   deriving (Eq, Show)
 
 arity :: Prim -> Int
@@ -69,6 +73,9 @@ arity If0 = 1
 arity Draw = 1
 arity Chkb = 0
 arity MultiDraw = 1
+arity Modem = 1
+arity F38 = 2
+arity Interact = 3
 
 data Token
   = TPrim Prim
