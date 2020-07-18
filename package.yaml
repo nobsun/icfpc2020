@@ -38,6 +38,7 @@ library:
   - containers
   - transformers
   exposed-modules:
+  - Eval
   - Message
   - Modulate
   - TextParser
