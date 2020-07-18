@@ -38,6 +38,8 @@ library:
   - transformers
   exposed-modules:
   - Message
+  - Modulate
+  - TextParser
   source-dirs: src
 
 executables:
