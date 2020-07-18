@@ -23,17 +23,17 @@ import Message
 -- >>> parseToken (L8.pack "ap ap cons 2 ap ap cons 7 nil")
 -- Right [TAp,TAp,TPrim Cons,TPrim (Num 2),TAp,TAp,TPrim Cons,TPrim (Num 7),TPrim Nil]
 --
--- >>> parseToken (L8.pack "ap ap cons x0 x1")
--- Right [TAp,TAp,TPrim Cons,TPrim (Var 0),TPrim (Var 1)]
+-- >>> parseToken (L8.pack "ap ap cons :1029 :1030")
+-- Right [TAp,TAp,TPrim Cons,TPrim (Var 1029),TPrim (Var 1030)]
 --
 -- >>> parseToken (L8.pack "ap ap ap c add 1 2")
 -- Right [TAp,TAp,TAp,TPrim C,TPrim Add,TPrim (Num 1),TPrim (Num 2)]
 --
 -- >>> parseLine (L8.pack ":1388 = ap ap :1162 :1386 0")
--- Right (1388,[TAp,TAp,TPrim (LineVar 1162),TPrim (LineVar 1386),TPrim (Num 0)])
+-- Right (1388,[TAp,TAp,TPrim (Var 1162),TPrim (Var 1386),TPrim (Num 0)])
 --
 -- >>> parseLine (L8.pack "galaxy = :1338")
--- Right (-1,[TPrim (LineVar 1338)])
+-- Right (-1,[TPrim (Var 1338)])
 --
 parseToken :: L8.ByteString -> Either String [Token]
 parseToken = eitherResult . parse (tokenP `sepBy` char ' ')
