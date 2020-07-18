@@ -62,8 +62,7 @@ tokenP :: Parser Token
 tokenP = choice
   [ string "ap"  *> pure TAp
   , TPrim . Num <$> (signed decimal)
-  , char 'x' >> TPrim . Var <$> decimal
-  , char ':' >> TPrim . LineVar <$> decimal
+  , char ':' >> TPrim . Var <$> decimal
   , string "inc" *> pure (TPrim Succ)
   , string "dec" *> pure (TPrim Pred)
   , string "add" *> pure (TPrim Add)

@@ -16,7 +16,6 @@ import qualified Data.Tree as T
 data Prim
   = Num Int
   | Var Int
-  | LineVar Int
   | Eq | Lt          -- 2 args
   | Succ | Pred      -- 1 arg
   | Add | Mul | Div  -- 2 arg
@@ -39,7 +38,6 @@ data Prim
 arity :: Prim -> Int
 arity (Num _) = 0
 arity (Var _) = 0
-arity (LineVar _) = 0
 arity Eq = 2
 arity Lt = 2
 arity Succ = 1
