@@ -3,7 +3,8 @@
 module TextParser
   ( parseLines
   , parseLine
-  , parseToken
+  , parseTokens
+  , parseMessage
   , galaxyKey
   ) where
 
@@ -26,13 +27,13 @@ galaxyKey = -1
 
 -- | XXX
 --
--- >>> parseToken (L8.pack "ap ap cons 2 ap ap cons 7 nil")
+-- >>> parseTokens (L8.pack "ap ap cons 2 ap ap cons 7 nil")
 -- Right [TAp,TAp,TPrim Cons,TPrim (Num 2),TAp,TAp,TPrim Cons,TPrim (Num 7),TPrim Nil]
 --
--- >>> parseToken (L8.pack "ap ap cons :1029 :1030")
+-- >>> parseTokens (L8.pack "ap ap cons :1029 :1030")
 -- Right [TAp,TAp,TPrim Cons,TPrim (Var 1029),TPrim (Var 1030)]
 --
--- >>> parseToken (L8.pack "ap ap ap c add 1 2")
+-- >>> parseTokens (L8.pack "ap ap ap c add 1 2")
 -- Right [TAp,TAp,TAp,TPrim C,TPrim Add,TPrim (Num 1),TPrim (Num 2)]
 --
 -- >>> parseLine (L8.pack ":1388 = ap ap :1162 :1386 0")
@@ -41,8 +42,8 @@ galaxyKey = -1
 -- >>> parseLine (L8.pack "galaxy = :1338")
 -- Right (-1,[TPrim (Var 1338)])
 --
-parseToken :: L8.ByteString -> Either String [M.Token]
-parseToken = (listDesugar =<<) . eitherResult . parse (tokenP `sepBy` char ' ')
+parseTokens :: L8.ByteString -> Either String [M.Token]
+parseTokens = (listDesugar =<<) . eitherResult . parse (tokenP `sepBy` char ' ')
 
 parseLine :: L8.ByteString -> Either String (Int,[M.Token])
 parseLine in_ = do
@@ -100,6 +101,9 @@ tokenP =
      string "draw"  *> pure Draw   <|>
      string "checkerboard"   *> pure Chkb       <|>
      string "multipledraw"   *> pure MultiDraw  <|>
+     string "modem" *> pure Modem  <|>
+     string "f38"   *> pure F38    <|>
+     string "interact"       *> pure Interact   <|>
      string "s"     *> pure S      <|>
      string "c"     *> pure C      <|>
      string "b"     *> pure B      <|>
@@ -109,3 +113,9 @@ tokenP =
   string "(" *> pure ParenL      <|>
   string ")" *> pure ParenR      <|>
   string "," *> pure Comma
+
+
+parseMessage :: L8.ByteString -> Either String M.Expr
+parseMessage s = do
+  ts <- parseTokens s
+  maybe (Left $ "message: invalid token sequence: " ++ show ts) Right $ M.toExpr ts
