@@ -5,14 +5,11 @@ module Modulate
   , demodulate
   ) where
 
-import Prelude hiding (take, takeWhile)
-
 import Control.Applicative
 import Data.Maybe (listToMaybe)
-import qualified Data.List as L
 import Data.Attoparsec.ByteString.Lazy
-  (parse, eitherResult)
-import Data.Attoparsec.ByteString.Char8 as C8 hiding (parse, eitherResult)
+  (Parser, parse, eitherResult)
+import qualified Data.Attoparsec.ByteString.Char8 as A8
 
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as L8 hiding (take, takeWhile)
@@ -54,8 +51,8 @@ modulateNum n =
     sn ++ ['1'|_<-[1..len]] ++ ('0': (if n>0 then num else ""))
   where
     sn = if signum n >= 0 then "01" else "10"
-    len = length $ L.takeWhile (>0) $ iterate (`div`16) n
-    num = reverse $ L.take (4*len) $ (reverse $ showIntAtBase 2 toChar (abs n) "") ++ (repeat '0')
+    len = length $ takeWhile (>0) $ iterate (`div`16) n
+    num = reverse $ take (4*len) $ (reverse $ showIntAtBase 2 toChar (abs n) "") ++ (repeat '0')
 
 toChar :: Int -> Char
 toChar 0 = '0'
@@ -87,20 +84,20 @@ demodulate = eitherResult . parse demodP
 
 
 demodP :: Parser Expr
-demodP = choice
-  [ string "00" *> pure (Prim Nil)
-  , string "11" *> (Ap <$> Ap (Prim Cons) <$> demodP <*> demodP)
+demodP = A8.choice
+  [ A8.string "00" *> pure (Prim Nil)
+  , A8.string "11" *> (Ap <$> Ap (Prim Cons) <$> demodP <*> demodP)
   , demodNumP
   ]
 
 demodNumP :: Parser Expr
 demodNumP = do
-  sig <- (string "01" *> pure 1) <|> (string "10" *> pure (-1))
-  len <- (4*) . B.length <$> takeWhile (=='1')
-  _ <-char '0'
+  sig <- (A8.string "01" *> pure 1) <|> (A8.string "10" *> pure (-1))
+  len <- (4*) . B.length <$> A8.takeWhile (=='1')
+  _ <- A8.char '0'
   if len == 0
     then pure (Prim (Num 0))
     else do
-    bstr <- B.unpack <$> take len
+    bstr <- B.unpack <$> A8.take len
     maybe (fail "readInt 2 failed.") (return . Prim . Num . (*sig))
       $ listToMaybe [ i | (i, "") <- readInt 2 (`elem`("01"::String)) toInt bstr ]
