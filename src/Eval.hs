@@ -65,12 +65,17 @@ data Value
 -- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num 0))) (Prim (Num 1)))
 -- PAp F []
 --
--- | Less Than
 -- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num 0))) (Prim (Num 0)))
 -- PAp F []
 --
 -- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num 0))) (Prim (Num 1)))
 -- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num 0)))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num (-2))))
+-- PAp F []
 --
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
