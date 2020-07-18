@@ -1,12 +1,14 @@
 module GalaxyTxt (
   getGalaxyTxt,
   getGalaxyTokens,
+  getGalaxyExprs,
   ) where
 
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Char8 as L8
+import System.IO.Unsafe (unsafeInterleaveIO)
 
-import Message (Token)
+import Message (Token, Expr, toExpr)
 import TextParser (parseLine)
 
 -- | Get content of galaxy.txt with lazy-IO
@@ -17,4 +19,17 @@ getGalaxyTxt = LB.readFile "data/galaxy.txt"
 getGalaxyTokens :: IO [(Int, [Token])]
 getGalaxyTokens = do
   in_ <- getGalaxyTxt
-  mapM (either fail return . parseLine) $ L8.lines in_
+  let loop  []    = return []
+      loop (x:xs) = unsafeInterleaveIO $
+        (:)
+        <$> either fail return (parseLine x)
+        <*> loop xs
+
+  loop $ L8.lines in_
+
+getGalaxyExprs :: IO [(Int, Expr)]
+getGalaxyExprs = do
+  ps <- getGalaxyTokens
+  let toExpr_ (n, ts) =
+        maybe (fail $ "parse error: " ++ show n ++ ": " ++ show (take 30 ts) ++ " ...") (return . (,) n) $ toExpr ts
+  mapM toExpr_ ps
