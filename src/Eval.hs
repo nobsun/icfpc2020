@@ -5,6 +5,7 @@ import Control.Monad hiding (ap)
 import Data.List (foldl')
 import qualified Data.IntMap.Lazy as IntMap
 import Data.IntMap (IntMap)
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Set (Set)
 
@@ -19,6 +20,14 @@ resolve env = f
     f (Prim (Var n)) = env' IntMap.! n
     f prim@(Prim _) = prim
     env' = IntMap.map f env
+
+resolveLocal :: IntMap Expr -> Expr -> Expr
+resolveLocal lenv = f
+  where
+    f (Ap a b) = Ap (f a) (f b)
+    f (Prim (LVar n)) = env' IntMap.! n
+    f prim@(Prim _) = prim
+    env' = IntMap.map f lenv
 
 data Value
   = PAp Prim [Expr]
@@ -180,6 +189,10 @@ reduce send env = f
         f x2
       else
         f x3
+    redPrim If0 [x1] = do
+      n <- asNum x1
+      if n == 0 then f (Prim T)
+      else           f (Prim F)
     redPrim Draw [xs] = do
       let p (x1,x2) = do
             x1' <- asNum x1
@@ -193,8 +206,15 @@ reduce send env = f
       case x' of
         Nothing -> return $ PAp Nil []
         Just (x0, x1) -> f $ Ap (Ap (Prim Cons) (Ap (Prim Draw) x0)) (Ap (Prim MultiDraw) x1)
-    redPrim prim args = fail $ "redPrim: " ++ show prim ++ " " ++ show args
+    redPrim prim args
+      | Just (ixs, def) <- Map.lookup prim funcs  =  f $ resolveLocal (IntMap.fromList $ zip ixs args) def
+      | otherwise                                 =  fail $ "redPrim: " ++ show prim ++ " " ++ show args
 
+    funcs =
+      Map.fromList
+      [(Modem, modemDef),
+       (F38, f38Def),
+       (Interact, interactDef)]
 
 pwr2Def :: Expr
 pwr2Def = Ap (Ap (Prim S) (Ap (Ap (Prim C) (Ap (Prim Eq) (Prim (Num 0)))) (Prim (Num 1)))) (Ap (Ap (Prim B) (Ap (Prim Mul) (Prim (Num 2)))) (Ap (Ap (Prim B) (Prim Pow2)) (Ap (Prim Add) (Prim (Num (-1))))))
