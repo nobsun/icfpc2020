@@ -6,10 +6,10 @@ module Message (
   toExpr,
   ) where
 
-import Control.Applicative (empty)
-import Control.Monad.Trans.State (StateT, runStateT, get, put)
-
 import qualified Data.Tree as T
+
+import MonadicParser (runParser, token, eof)
+import qualified MonadicParser as MP
 
 -----
 
@@ -83,26 +83,7 @@ cataExpr f g = u
 
 -----
 
-type Parser = StateT [Token] Maybe
-
-runParser :: Parser a -> [Token] -> Maybe (a, [Token])
-runParser = runStateT
-
-token :: Parser Token
-token = do
-  tts <- get
-  case tts of
-    []    ->  empty
-    t:ts  ->  put ts *> pure t
-
-eof :: Parser ()
-eof = do
-  tts <- get
-  case tts of
-    []   ->  pure ()
-    _:_  ->  empty
-
------
+type Parser = MP.Parser Token Maybe
 
 expr :: Parser Expr
 expr = do
