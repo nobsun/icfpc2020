@@ -39,7 +39,7 @@ data Prim
   | Modem            -- 1 arg
   | F38              -- 2 arg
   | Interact         -- 3 arg
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 arity :: Prim -> Int
 arity (Num _) = 0
