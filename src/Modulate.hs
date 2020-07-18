@@ -2,6 +2,7 @@
 
 module Modulate
   ( modulate
+  , modulate_
   , demodulate
   ) where
 
@@ -39,11 +40,16 @@ import Message
 -- >>> modulate (Ap (Ap (Prim Cons) (Prim (Num 1))) (Ap (Ap (Prim Cons) (Prim (Num 2))) (Prim Nil)))
 -- "1101100001110110001000"
 modulate :: Expr -> String
-modulate (Prim (Num n))     = modulateNum n
-modulate (Prim Nil)         = "00"
-modulate (Ap(Prim  Cons) e) = "11" ++ modulate e
-modulate (Ap e1 e2)         = modulate e1 ++ modulate e2
-modulate e                  = error "modulate: unknown expr to modulate!: " ++ show e
+modulate e =
+  either (error $ "modulate: unknown expr to modulate!: " ++ show e) id $
+  modulate_ e
+
+modulate_ :: Expr -> Either String String
+modulate_ (Prim (Num n))     = Right $ modulateNum n
+modulate_ (Prim Nil)         = Right "00"
+modulate_ (Ap(Prim  Cons) e) = (++) "11" <$> modulate_ e
+modulate_ (Ap e1 e2)         = (++) <$> modulate_ e1 <*> modulate_ e2
+modulate_  e                 = Left $ "modulate: unknown expr to modulate!: " ++ show e
 
 
 modulateNum :: Int -> String

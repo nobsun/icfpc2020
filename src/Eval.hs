@@ -9,6 +9,15 @@ import Data.Set (Set)
 
 import Message
 
+-- 変数の参照を解決する
+resolve :: IntMap Expr -> Expr -> Expr
+resolve env = f
+  where
+    f (Ap a b) = Ap (f a) (f b)
+    f (Prim (Var n)) = env' IntMap.! n
+    f prim@(Prim _) = prim
+    env' = IntMap.map f env
+
 data Value
   = PAp Prim [Expr]
   | Picture (Set (Int,Int))
