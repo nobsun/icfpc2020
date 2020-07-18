@@ -6,4 +6,5 @@ main = doctest
   [ "-isrc"
   , "src/TextParser.hs"
   , "src/Modulate.hs"
+  , "src/Draw.hs"
   ]
