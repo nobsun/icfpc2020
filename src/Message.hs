@@ -16,6 +16,7 @@ import qualified MonadicParser as MP
 data Prim
   = Num Int
   | Var Int
+  | MBits String  -- modulated bits - string of '0' '1'
   | Eq | Lt          -- 2 args
   | Succ | Pred      -- 1 arg
   | Add | Mul | Div  -- 2 arg
@@ -38,6 +39,7 @@ data Prim
 arity :: Prim -> Int
 arity (Num _) = 0
 arity (Var _) = 0
+arity (MBits _) = 0
 arity Eq = 2
 arity Lt = 2
 arity Succ = 1
