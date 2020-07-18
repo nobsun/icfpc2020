@@ -121,6 +121,34 @@ data Value
 -- >>> reduce pure IntMap.empty (Ap (Prim Pred) (Prim (Num (-1))))
 -- PAp (Num (-2)) []
 --
+-- | Sum
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num 1))) (Prim (Num 2)))
+-- PAp (Num 3) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num 2))) (Prim (Num 1)))
+-- PAp (Num 3) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num 0))) (Prim (Num 1)))
+-- PAp (Num 1) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num 2))) (Prim (Num 3)))
+-- PAp (Num 5) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num 3))) (Prim (Num 5)))
+-- PAp (Num 8) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num (-2)))) (Prim (Num (-1))))
+-- PAp (Num (-3)) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num 0))) (Prim (Num (-1))))
+-- PAp (Num (-1)) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num (-2)))) (Prim (Num (-3))))
+-- PAp (Num (-5)) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num (-5)))) (Prim (Num 3)))
+-- PAp (Num (-2)) []
+--
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
