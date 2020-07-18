@@ -102,12 +102,14 @@ reduce send env = f
         PAp (MBits s) [] -> return s
         _ -> fail $ "asMBits: " ++ show e'
 
-    asArity0 :: Expr -> m Prim
-    asArity0 e = do
+    asExpr :: Expr -> m Expr
+    asExpr e = do
       e' <- f e
       case e' of
-        PAp prim [] -> return prim
-        _ -> fail $ "asArith0: " ++ show e'
+        PAp p@(Num _) []  -> return $ Prim p
+        PAp Cons [x1, x2] -> return $ Ap (Ap (Prim Cons) x1) x2
+        PAp Nil []        -> return $ Prim Nil
+        _ -> fail $ "asExpr: " ++ show e'
 
     redPrim prim@(Num _) _ = return $ PAp prim []
     redPrim prim@(Var _) _ = return $ PAp prim []
@@ -138,13 +140,12 @@ reduce send env = f
       x2' <- asNum x2
       return $ PAp (Num (x1' `quot` x2')) []
     redPrim Mod [x] = do
-      x' <- asArity0 x
+      x' <- asExpr x
       let mbits v = PAp (MBits v) []
-      either (fail . ("reduce: mod: " ++)) (return . mbits) $ modulate_ $ Prim x'
+      either (fail . ("reduce: mod: " ++)) (return . mbits) $ modulate_ x'
     redPrim Dem [x] = do
       s <- asMBits x
-      dx <- either (fail . ("reduce: dem: " ++)) return $ demodulate s
-      PAp <$> asArity0 dx <*> pure []
+      either (fail . ("reduce: dem: " ++)) f $ demodulate s
     redPrim Send [x] = send =<< f x
     redPrim Neg [x] = do
       x' <- asNum x
