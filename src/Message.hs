@@ -24,14 +24,14 @@ data Prim
   | Neg              -- 1 arg
   | S | C | B        -- 3 arg
   | T {- True, K combinator -} | F {- False, flip K -}  -- 2 arg
-  | Pow2             -- 1 arg
+  | Pow2             -- 1 arg (NOTE: 0-arityで再帰的に定義されたコンビネータとして扱うべき?)
   | I                -- 1 arg
   | Cons             -- 3 arg
   | Car | Cdr        -- 1 arg
   | Nil | IsNil      -- 1 arg
   | If0              -- 3 arg
   | Draw             -- 1 arg
-  | Chkb             -- 2 arg
+  | Chkb             -- 0 arg
   | MultiDraw        -- 1 arg
   deriving (Eq, Show)
 
@@ -63,7 +63,7 @@ arity Nil = 1
 arity IsNil = 1
 arity If0 = 1
 arity Draw = 1
-arity Chkb = 2
+arity Chkb = 0
 arity MultiDraw = 1
 
 data Token

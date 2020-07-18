@@ -22,7 +22,11 @@ reduce send env = f
       case IntMap.lookup n env of
         Just e -> f e
         Nothing -> fail $ "cannot find (Var " ++ show n ++ ") in environment"
-    f (Prim prim) = return $ PAp prim []
+    f (Prim prim) =
+      if arity prim == 0 then
+        redPrim prim []
+      else
+        return $ PAp prim []
     f (Ap fun arg) = do
       fun' <- f fun
       case fun' of
@@ -66,9 +70,12 @@ reduce send env = f
           ys' <- asList ys
           return $ x : ys'
 
-    redPrim (Num _) _ = undefined
-    redPrim (Var _) _ = undefined
-    redPrim Eq _ = undefined
+    redPrim prim@(Num _) _ = return $ PAp prim []
+    redPrim prim@(Var _) _ = return $ PAp prim []
+    redPrim Eq [x1, x2] = do
+      x1' <- asNum x1
+      x2' <- asNum x2
+      return $! if x1' == x2' then PAp T [] else PAp F []
     redPrim Lt [x1, x2] = do
       x1' <- asNum x1
       x2' <- asNum x2
@@ -105,6 +112,7 @@ reduce send env = f
     redPrim Pow2 [x] = do
       x' <- asNum x
       return $ PAp (Num (2 ^ x')) []
+    redPrim Pow2 [] = f pwr2Def
     redPrim I [x] = f x
     redPrim Cons [x1, x2, x3] = f $ Ap (Ap x3 x1) x2
     redPrim Car [x] = f $ Ap x (Prim T)
@@ -129,10 +137,17 @@ reduce send env = f
             return (x1', x2')
       cs <- mapM (p <=< asCons) =<< asList xs
       return $ Picture (Set.fromList cs)
-    redPrim Chkb [_x1, _x2] = undefined -- TODO
+    redPrim Chkb [] = f chkbDef
     redPrim MultiDraw [x] = do
       x' <- asConsOrNil x
       case x' of
         Nothing -> return $ PAp Nil []
         Just (x0, x1) -> f $ Ap (Ap (Prim Cons) (Ap (Prim Draw) x0)) (Ap (Prim MultiDraw) x1)
-      
+    redPrim prim args = fail $ "redPrim: " ++ show prim ++ " " ++ show args
+
+
+pwr2Def :: Expr
+pwr2Def = Ap (Ap (Prim S) (Ap (Ap (Prim C) (Ap (Prim Eq) (Prim (Num 0)))) (Prim (Num 1)))) (Ap (Ap (Prim B) (Ap (Prim Mul) (Prim (Num 2)))) (Ap (Ap (Prim B) (Prim Pow2)) (Ap (Prim Add) (Prim (Num (-1))))))
+
+chkbDef :: Expr
+chkbDef = Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim C)) (Ap (Ap (Prim B) (Ap (Prim C) (Ap (Prim C) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Ap (Ap (Prim S) (Prim I)) (Prim I)))) (Prim Lt)))) (Prim Eq))))) (Ap (Ap (Prim S) (Prim Mul)) (Prim I))))) (Prim Nil)))) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Prim Cons))) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Prim Cons))) (Ap (Prim C) (Prim Div))))) (Ap (Prim C) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim B)) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim B)) (Prim Add))) (Prim Neg)))) (Ap (Ap (Prim B) (Ap (Prim S) (Prim Mul))) (Prim Div)))))))) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim B)) (Prim Chkb))) (Ap (Ap (Prim C) (Prim Add)) (Prim (Num 2)))))
