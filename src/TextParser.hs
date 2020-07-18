@@ -77,7 +77,6 @@ tokenP =
     string "send"  *> pure Send   <|>
     string "neg"   *> pure Neg    <|>
     string "pwr2"  *> pure Pow2   <|>
-    string "pwr"   *> pure Pow2   <|>
     string "cons"  *> pure Cons   <|>
     string "nil"   *> pure Nil    <|>
     string "car"   *> pure Car    <|>
