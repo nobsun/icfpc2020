@@ -4,6 +4,7 @@ module TextParser
   ( parseLines
   , parseLine
   , parseToken
+  , galaxyKey
   ) where
 
 import Control.Applicative
@@ -19,6 +20,9 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Message (Prim (..))
 import qualified Message as M
 import ListDesugar (Token (..), desugar)
+
+galaxyKey :: Int
+galaxyKey = -1
 
 -- | XXX
 --
@@ -65,7 +69,7 @@ lineP = do
 lineNoP :: Parser Int
 lineNoP =
   char ':' *> decimal          <|>
-  string "galaxy" *> pure (-1)
+  string "galaxy" *> pure galaxyKey
 
 tokenP :: Parser Token
 tokenP =

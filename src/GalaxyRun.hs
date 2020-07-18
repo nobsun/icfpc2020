@@ -6,11 +6,11 @@ import Data.IntMap (fromList)
 import qualified Data.IntMap as IM
 
 import Eval (Value, reduce)
-import GalaxyTxt (getGalaxyExprs)
+import GalaxyTxt (getGalaxyExprs, galaxyKey)
 
 runGalaxy :: IO Value
 runGalaxy = do
   ps <- getGalaxyExprs
   let envm = fromList ps
-  gexpr <- maybe (fail "galaxy expr not found!") return $ IM.lookup (-1) envm
+  gexpr <- maybe (fail "galaxy expr not found!") return $ IM.lookup galaxyKey envm
   reduce pure envm gexpr

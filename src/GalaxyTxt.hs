@@ -2,6 +2,7 @@ module GalaxyTxt (
   getGalaxyTxt,
   getGalaxyTokens,
   getGalaxyExprs,
+  galaxyKey,
   ) where
 
 import qualified Data.ByteString.Lazy as LB
@@ -9,7 +10,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import System.IO.Unsafe (unsafeInterleaveIO)
 
 import Message (Token, Expr, toExpr)
-import TextParser (parseLine)
+import TextParser (parseLine, galaxyKey)
 
 -- | Get content of galaxy.txt with lazy-IO
 getGalaxyTxt :: IO LB.ByteString
