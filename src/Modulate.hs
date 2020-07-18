@@ -57,7 +57,7 @@ modulateNum n =
     len = length $ L.takeWhile (>0) $ iterate (`div`16) n
     num = reverse $ L.take (4*len) $ (reverse $ showIntAtBase 2 toChar (abs n) "") ++ (repeat '0')
 
-toChar :: Char -> Int
+toChar :: Int -> Char
 toChar 0 = '0'
 toChar _ = '1'
 
