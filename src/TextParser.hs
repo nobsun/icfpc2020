@@ -42,7 +42,7 @@ parseToken = (listDesugar =<<) . eitherResult . parse (tokenP `sepBy` char ' ')
 
 parseLine :: L8.ByteString -> Either String (Int,[M.Token])
 parseLine in_ = do
-  (n, ts) <- eitherResult $ parse lineP in_
+  (n, ts) <- eitherResult $ parse (lineP <* endOfLine) in_
   (,) n <$> listDesugar ts
 
 parseLines :: L8.ByteString -> Either String [(Int,[M.Token])]
@@ -88,6 +88,7 @@ tokenP =
      string "pwr2"  *> pure Pow2   <|>
      string "cons"  *> pure Cons   <|>
      string "nil"   *> pure Nil    <|>
+     string "isnil" *> pure IsNil  <|>
      string "car"   *> pure Car    <|>
      string "cdr"   *> pure Cdr    <|>
      string "if0"   *> pure If0    <|>
