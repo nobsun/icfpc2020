@@ -4,6 +4,7 @@ module Modulate
   ( modulate
   , modulate_
   , demodulate
+  , demodulate_
   ) where
 
 import Control.Applicative
@@ -70,23 +71,26 @@ toInt _   = 1
 
 
 -- | XXX
--- >>> demodulate (L8.pack "00")
+-- >>> demodulate "00"
 -- Right (Prim Nil)
 --
--- >>> demodulate (L8.pack "010")
+-- >>> demodulate "010"
 -- Right (Prim (Num 0))
 --
--- >>> demodulate (L8.pack "10100001")
+-- >>> demodulate "10100001"
 -- Right (Prim (Num (-1)))
 --
--- >>> demodulate (L8.pack "110000")
+-- >>> demodulate "110000"
 -- Right (Ap (Ap (Prim Cons) (Prim Nil)) (Prim Nil))
 --
--- >>> demodulate (L8.pack "1101100001110110001000")
+-- >>> demodulate "1101100001110110001000"
 -- Right (Ap (Ap (Prim Cons) (Prim (Num 1))) (Ap (Ap (Prim Cons) (Prim (Num 2))) (Prim Nil)))
 --
-demodulate :: L8.ByteString -> Either String Expr
-demodulate = eitherResult . parse demodP
+demodulate :: String -> Either String Expr
+demodulate = demodulate_ . L8.pack
+
+demodulate_ :: L8.ByteString -> Either String Expr
+demodulate_ = eitherResult . parse demodP
 
 
 demodP :: Parser Expr
