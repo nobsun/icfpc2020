@@ -24,6 +24,12 @@ dependencies:
 ghc-options:
 - -Wall
 
+flags:
+  static:
+    description: build statically linked binaries
+    default: false
+    manual: true
+
 library:
   dependencies:
   - attoparsec
@@ -42,12 +48,16 @@ executables:
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
-    - -static
     - -threaded
-    cc-options: -static
-    ld-options:
-    - -static
-    - -pthread
+    when:
+      - condition: flag(static)
+        then:
+          ghc-options: -static
+          cc-options: -static
+          ld-options:
+          - -static
+          - -pthread
+        else: {}
     dependencies:
     - icfpc2020
     - process
@@ -63,8 +73,12 @@ executables:
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
-    - -static
     - -threaded
+    when:
+      - condition: flag(static)
+        then:
+          ghc-options: -static
+        else: {}
     dependencies:
     - icfpc2020
     - process
