@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Modulate 
+module Modulate
   ( modulate
   , demodulate
   ) where
@@ -8,6 +8,7 @@ module Modulate
 import Prelude hiding (take, takeWhile)
 
 import Control.Applicative
+import Data.Maybe (listToMaybe)
 import qualified Data.List as L
 import Data.Attoparsec.ByteString.Lazy
   (parse, eitherResult)
@@ -99,6 +100,7 @@ demodNumP = do
   _ <-char '0'
   if len == 0
     then pure (Prim (Num 0))
-    else Prim . Num <$> (*sig) . fst . head . readInt 2 (`elem`("01"::String)) toInt . B.unpack <$> take len
-
-
+    else do
+    bstr <- B.unpack <$> take len
+    maybe (fail "readInt 2 failed.") (return . Prim . Num . (*sig))
+      $ listToMaybe [ i | (i, "") <- readInt 2 (`elem`("01"::String)) toInt bstr ]
