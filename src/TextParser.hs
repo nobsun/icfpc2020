@@ -29,6 +29,12 @@ import Message
 -- >>> parseToken (L8.pack "ap ap ap c add 1 2")
 -- Right [TAp,TAp,TAp,TPrim C,TPrim Add,TPrim (Num 1),TPrim (Num 2)]
 --
+-- >>> parseLine (L8.pack ":1388 = ap ap :1162 :1386 0")
+-- Right (1388,[TAp,TAp,TPrim (LineVar 1162),TPrim (LineVar 1386),TPrim (Num 0)])
+--
+-- >>> parseLine (L8.pack "galaxy = :1338")
+-- Right (-1,[TPrim (LineVar 1338)])
+--
 parseToken :: L8.ByteString -> Either String [Token]
 parseToken = eitherResult . parse (tokenP `sepBy` char ' ')
 
@@ -49,6 +55,7 @@ lineP = do
 
 lineNoP :: Parser Int
 lineNoP = char ':' *> decimal
+  <|> (string "galaxy" *> pure (-1))
 
 
 tokenP :: Parser Token
@@ -56,6 +63,7 @@ tokenP = choice
   [ string "ap"  *> pure TAp
   , TPrim . Num <$> (signed decimal)
   , char 'x' >> TPrim . Var <$> decimal
+  , char ':' >> TPrim . LineVar <$> decimal
   , string "inc" *> pure (TPrim Succ)
   , string "dec" *> pure (TPrim Pred)
   , string "add" *> pure (TPrim Add)
