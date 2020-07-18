@@ -37,6 +37,9 @@ import Message
 -- >>> modulate (Prim (Num 1))
 -- "01100001"
 --
+-- >>> modulate (Prim (Num (-1)))
+-- "10100001"
+--
 -- >>> modulate (Ap (Ap (Prim Cons) (Prim (Num 1))) (Ap (Ap (Prim Cons) (Prim (Num 2))) (Prim Nil)))
 -- "1101100001110110001000"
 modulate :: Expr -> String
@@ -54,8 +57,9 @@ modulateNum n =
     len = length $ L.takeWhile (>0) $ iterate (`div`16) n
     num = reverse $ L.take (4*len) $ (reverse $ showIntAtBase 2 toChar (abs n) "") ++ (repeat '0')
 
+toChar :: Char -> Int
 toChar 0 = '0'
-toChar 1 = '1'
+toChar _ = '1'
 
 toInt :: Char -> Int
 toInt '0' = 0
@@ -68,6 +72,9 @@ toInt _   = 1
 --
 -- >>> demodulate (L8.pack "010")
 -- Right (Prim (Num 0))
+--
+-- >>> demodulate (L8.pack "10100001")
+-- Right (Prim (Num (-1)))
 --
 -- >>> demodulate (L8.pack "110000")
 -- Right (Ap (Ap (Prim Cons) (Prim Nil)) (Prim Nil))
