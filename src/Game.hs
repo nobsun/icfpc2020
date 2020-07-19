@@ -2,6 +2,7 @@ module Game (
   RequestTag (..),
   create,
   makeRequest,
+  Command (..), cmdShipId, encodeCommand,
 
   ResponseTag (..),
   GameStage (..),
@@ -11,7 +12,7 @@ module Game (
   decodeResponse_,
   ) where
 
-import Message (Expr (Ap, Prim), Prim (Num, Cons), fromList, toList)
+import Message (Expr (Ap, Prim), Prim (Num, Cons), fromList, toList, cons, num)
 
 data RequestTag
   = CREATE
@@ -38,22 +39,23 @@ makeRequest playerKey rtag dataExpr =
   fromList [ Prim $ Num $ requestCode rtag, Prim $ Num playerKey, dataExpr ]
 
 
-{-
 data Command
   = Accelerate Int (Int, Int)
   | Detonate   Int
   | Shoot      Int (Int, Int) Expr
 
-shipId :: Command -> Int
-shipId (Accelerate x _) = x
-shipId (Detonate x)     = x
-shipId (Shoot x _ _)    = x
+cmdShipId :: Command -> Int
+cmdShipId (Accelerate x _) = x
+cmdShipId (Detonate x)     = x
+cmdShipId (Shoot x _ _)    = x
 
--- encodeCommand :: Command -> Expr
-encodeCommand cmd =
+encodeCommand :: Command -> Expr
+encodeCommand =
+    dispatch
   where
-    dispatch (Accelerate sid vec) = [ Prim (Num 0), Prim (Num sid), cons (Prim (Num
- -}
+    dispatch (Accelerate sid (dx, dy))     = fromList [ num 0, num sid, cons (num dx) (num dy) ]
+    dispatch (Detonate   sid)              = fromList [ num 1, num sid ]
+    dispatch (Shoot      sid (px, py) x3)  = fromList [ num 2, num sid, cons (num px) (num py), x3 ]
 
 data ResponseTag
   = WRONG_REQUEST
