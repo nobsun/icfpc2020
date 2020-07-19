@@ -1,7 +1,7 @@
 module Main where
 
 import Prelude hiding (interact)
-import Control.Arrow ((&&&))
+import Control.Arrow ((&&&), (***))
 import Control.Monad
 import qualified Data.IntMap.Lazy as IntMap
 import Data.IORef
@@ -18,7 +18,7 @@ saveImages :: String -> [Image] -> IO ()
 saveImages prefix images = do
   let ps = (0, 0):[p | pixels <- images, p <- pixels]
       min'max = minimum &&& maximum
-      ((xmin, xmax), (ymin, ymax)) = min'max . map fst &&& min'max . map snd $ ps
+      ((xmin, xmax), (ymin, ymax)) = min'max *** min'max $ unzip ps
       w = xmax - xmin + 1
       h = ymax - ymin + 1
   print ((xmin,ymin), (xmax,ymax))
