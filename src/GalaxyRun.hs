@@ -1,7 +1,9 @@
 module GalaxyRun (
   getGalaxyProtocol,
-  interacts,
-  rangedInteracts,
+
+  interacts, rangedInteracts,
+
+  manualInteracts, galaxyManualInteracts, galaxyManualInteracts_,
 
   runProtocol,
   protocol1,
@@ -60,6 +62,17 @@ interacts send env protocol istate ivector = do
               (:) (newState, asImages dat) <$> loop newState newVector
   loop istate ivector
 
+manualInteracts :: IntMap Expr -> Expr
+                -> State -> [(Int, Int)] -> [((State, [Image]), Bool)]
+manualInteracts env protocol istate ivectors =
+    loop istate ivectors
+  where
+    loop _      []    = []
+    loop state (v:vs) =
+        ((newState, asImages dat), flag /= 0) : loop newState vs
+      where
+        (flag, newState, dat) = step env protocol state v
+
 rangedInteracts :: (NFValue -> IO (Int, Int))
                 -> IntMap Expr -> Expr
                 -> ((Int, Int), (Int, Int))
@@ -84,8 +97,15 @@ galaxyInteracts range = do
   (env, proto) <- getGalaxyProtocol
   rangedInteracts sendGetPX env proto range
 
-
 _run :: IO ()
 _run = do
   gs <- galaxyInteracts ((-1000,-1000), (1000, 1000))
   print $ maximumBy (comparing snd)  [ (length rs, v) | (v, rs) <- gs ]
+
+galaxyManualInteracts :: [(Int, Int)] -> IO [((State, [Image]), Bool)]
+galaxyManualInteracts vs = do
+  (env, proto) <- getGalaxyProtocol
+  return $ manualInteracts env proto SNil vs
+
+galaxyManualInteracts_ :: IO [((State, [Image]), Bool)]
+galaxyManualInteracts_ = galaxyManualInteracts $ repeat (0, 0)
