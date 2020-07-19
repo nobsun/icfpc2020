@@ -1,7 +1,7 @@
 module Game (
   RequestTag (..),
   create,
-  makeRequest,
+  encodeRequest,
   Command (..), cmdShipId, encodeCommand,
 
   ResponseTag (..),
@@ -34,8 +34,8 @@ create :: Expr
 create =
   fromList [ Prim $ Num $ requestCode CREATE ]
 
-makeRequest :: Int -> RequestTag -> Expr -> Expr
-makeRequest playerKey rtag dataExpr =
+encodeRequest :: Int -> RequestTag -> Expr -> Expr
+encodeRequest playerKey rtag dataExpr =
   fromList [ Prim $ Num $ requestCode rtag, Prim $ Num playerKey, dataExpr ]
 
 

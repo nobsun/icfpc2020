@@ -2,7 +2,7 @@ module GameRun (
   run,
   ) where
 
-import Game (RequestTag (..), makeRequest, decodeResponse)
+import Game (RequestTag (..), encodeRequest, decodeResponse)
 import CurlCmd (gameSend)
 import Message (Expr (Prim), Prim (Nil, Num), fromList, toList)
 import Modulate (modulate, demodulate)
@@ -13,6 +13,7 @@ run server playerKeyStr = do
   putStrLn $ "playerKey: " ++ show playerKey
   let request_ = request server playerKey
   joinR   <- request_ JOIN  nil
+  listPrint "JOIN response: " joinR
   either print print $ decodeResponse joinR
   startR  <- request_ START (startParam (2, 3, 4, 5))
   listPrint "START response: " startR
@@ -28,7 +29,7 @@ listPrint prefix =
 
 request :: String -> Int -> RequestTag -> Expr -> IO Expr
 request server playerKey rtag dexpr = do
-  let req = makeRequest playerKey rtag dexpr
+  let req = encodeRequest playerKey rtag dexpr
   listPrint (show rtag ++ " request: ") req
   resp  <- gameSend server $ modulate req
   either (fail . ("request: fail to demodulate response: " ++)) return $ demodulate resp
