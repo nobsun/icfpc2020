@@ -87,14 +87,6 @@ main = do
 
         GLFW.swapInterval 1
 
-        GL.position (GL.Light 0) GL.$= GL.Vertex4 5 5 10 0
-        GL.light    (GL.Light 0) GL.$= GL.Enabled
-        GL.lighting   GL.$= GL.Enabled
-        GL.cullFace   GL.$= Just GL.Back
-        GL.depthFunc  GL.$= Just GL.Less
-        GL.clearColor GL.$= GL.Color4 0.05 0.05 0.05 1
-        GL.normalize  GL.$= GL.Enabled
-
         (fbWidth, fbHeight) <- GLFW.getFramebufferSize win
 
         ps <- getGalaxyExprs
@@ -320,7 +312,7 @@ draw = do
 --        print pic
         GL.clear [GL.ColorBuffer, GL.DepthBuffer]
         flip mapM_ (zip [1, 0.8 ..] pics) $ \(i,pic) -> do
-          GL.color (GL.Color4 1 1 1 i :: GL.Color4 GL.GLfloat)
+          GL.color (GL.Color3 i i i :: GL.Color3 GL.GLfloat)
           GL.renderPrimitive GL.Quads $ mapM_ GL.vertex $ concatMap box pic
       else
         return ()
