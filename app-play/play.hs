@@ -49,24 +49,24 @@ saveImages prefix images = do
     -- TODO
     bgColor = Picture.PixelRGB8   0   0   0
     colors = [ Picture.PixelRGB8 216 164 108
-             , Picture.PixelRGB8 216 152 120
-             , Picture.PixelRGB8 220 140 140
-             , Picture.PixelRGB8 188 143 143
-             , Picture.PixelRGB8 196 124 180
-             , Picture.PixelRGB8 196 184 160
-             , Picture.PixelRGB8 240 188 168
-             , Picture.PixelRGB8 204 168 192
-             , Picture.PixelRGB8 228 136 152
-             , Picture.PixelRGB8 196  80 160
-             , Picture.PixelRGB8 168  88 168
-             , Picture.PixelRGB8 120 104 196
-             , Picture.PixelRGB8 136 120 148
-             , Picture.PixelRGB8 116 124 116
-             , Picture.PixelRGB8 120  84 124
-             , Picture.PixelRGB8 148  76  56
-             , Picture.PixelRGB8 184  72  40
-             , Picture.PixelRGB8  68  76 156
              , Picture.PixelRGB8  96  72 120
+             , Picture.PixelRGB8 216 152 120
+             , Picture.PixelRGB8  68  76 156
+             , Picture.PixelRGB8 220 140 140
+             , Picture.PixelRGB8 120 104 196
+             , Picture.PixelRGB8 184  72  40
+             , Picture.PixelRGB8 168  88 168
+             , Picture.PixelRGB8 240 188 168
+             , Picture.PixelRGB8 148  76  56
+             , Picture.PixelRGB8 188 143 143
+             , Picture.PixelRGB8 204 168 192
+             , Picture.PixelRGB8 120  84 124
+             , Picture.PixelRGB8 196 124 180
+             , Picture.PixelRGB8 228 136 152
+             , Picture.PixelRGB8 196 184 160
+             , Picture.PixelRGB8 116 124 116
+             , Picture.PixelRGB8 196  80 160
+             , Picture.PixelRGB8 136 120 148
              ]
     colorLen = length colors
 
