@@ -39,12 +39,11 @@ data Value
 -- >>> reduce pure IntMap.empty (Prim (Num 42))
 -- PAp (Num 42) []
 --
--- | Get Variable's Value from Env
--- >>> :{
--- let env = IntMap.fromList [(2048, Prim (Num 42))]
--- in reduce pure env (Prim (Var 2048))
--- :}
--- PAp (Num 42) []
+-- >>> reduce pure IntMap.empty (Prim (Num (-3)))
+-- PAp (Num (-3)) []
+--
+-- >>> reduce pure IntMap.empty (Prim (Num 0))
+-- PAp (Num 0) []
 --
 -- | Calculate Number
 -- >>> reduce pure IntMap.empty (Ap (Prim Pred) (Ap (Ap (Prim Add) (Prim (Num 1))) (Prim (Num 2))))
@@ -267,6 +266,37 @@ data Value
 --
 -- >>> reduce pure IntMap.empty (Ap (Prim Neg) (Prim (Num (-2))))
 -- PAp (Num 2) []
+--
+-- | Function Application
+-- >>> reduce pure IntMap.empty (Ap (Prim Succ) (Ap (Prim Succ) (Prim (Num 0))))
+-- PAp (Num 2) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Succ) (Ap (Prim Succ) (Ap (Prim Succ) (Prim (Num 0)))))
+-- PAp (Num 3) []
+--
+-- >>> :{
+-- let env = IntMap.fromList [(1030, Prim (Num 42))]
+-- in reduce pure env (Ap (Prim Succ) (Ap (Prim Pred) (Prim (Var 1030))))
+-- :}
+-- PAp (Num 42) []
+--
+-- >>> :{
+-- let env = IntMap.fromList [(1030, Prim (Num 42))]
+-- in reduce pure env (Ap (Prim Pred) (Ap (Ap (Prim Add) (Prim (Var 1030))) (Prim (Num 1))))
+-- :}
+-- PAp (Num 42) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Ap (Ap (Prim Add) (Prim (Num 2))) (Prim (Num 3)))) (Prim (Num 4)))
+-- PAp (Num 9) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num 2))) (Ap (Ap (Prim Add) (Prim (Num 3))) (Prim (Num 4))))
+-- PAp (Num 9) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Ap (Ap (Prim Mul) (Prim (Num 2))) (Prim (Num 3)))) (Prim (Num 4)))
+-- PAp (Num 10) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Mul) (Prim (Num 2))) (Ap (Ap (Prim Add) (Prim (Num 3))) (Prim (Num 4))))
+-- PAp (Num 14) []
 --
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
