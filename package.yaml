@@ -94,6 +94,16 @@ executables:
     - process
     - curl
 
+  play:
+    main:                play.hs
+    source-dirs:         app-play
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    dependencies:
+    - icfpc2020
+    - process
+
 tests:
   icfpc2020-test:
     main:                spec.hs
