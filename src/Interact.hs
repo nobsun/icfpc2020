@@ -19,12 +19,11 @@ import Control.Monad
 import qualified Data.IntMap.Lazy as IntMap
 import Data.IntMap.Lazy (IntMap)
 import qualified Data.Set as Set
-import Data.Set (Set)
 import Data.Word
 import qualified Codec.Picture as Picture
 
 import Eval
-import Message
+import Message hiding (toExpr)
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import qualified Send
 
@@ -90,7 +89,7 @@ asState (NFPAp Cons [x, y]) = SCons (asState x) (asState y)
 asState (NFPAp (Num n) []) = SNum n
 asState v = error $ "asState: " ++ show v
 
-
+_test_step :: IO ()
 _test_step = do
   ps <- getGalaxyExprs
   let env = IntMap.fromList ps
@@ -98,6 +97,7 @@ _test_step = do
   let ret = step env galaxy SNil (0,0)
   print ret
 
+_test_interact :: IO ()
 _test_interact = do
   ps <- getGalaxyExprs
   let env = IntMap.fromList ps
@@ -118,14 +118,17 @@ _test_interact = do
         img = Picture.generateImage f w h
     Picture.writePng ("output" ++ show i ++ ".png") img
 
+_test_interact_2 :: IO ()
 _test_interact_2 = do
   ps <- getGalaxyExprs
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
       toExpr (NFPAp prim args) = foldl (\e arg -> Ap e (toExpr arg)) (Prim prim) args
+      toExpr x = error $ "unsupported data constructor:" ++ show x
       toNFValue (Ap a b) =
         case toNFValue a of
           NFPAp prim args -> NFPAp prim (args ++ [toNFValue b])
+          x               -> error $ "unsupported data constructor: " ++ show x
       toNFValue (Prim prim) = NFPAp prim []
       send val = liftM (asPixel . toNFValue) $ Send.sendExpr $ toExpr val
   (_, images) <- interact send env galaxy SNil (0,0)
