@@ -149,6 +149,19 @@ data Value
 -- >>> reduce pure IntMap.empty (Ap (Ap (Prim Add) (Prim (Num (-5)))) (Prim (Num 3)))
 -- PAp (Num (-2)) []
 --
+-- | Variables
+-- >>> :{
+-- let env = IntMap.fromList [(2048, Prim (Num 42))]
+-- in reduce pure env (Ap (Ap (Prim Add) (Prim (Num 0))) (Prim (Var 2048)))
+-- :}
+-- PAp (Num 42) []
+--
+-- >>> :{
+-- let env = IntMap.fromList [(2048, Prim (Num 42))]
+-- in reduce pure env (Ap (Ap (Prim Add) (Prim (Var 2048))) (Prim (Num 0)))
+-- :}
+-- PAp (Num 42) []
+--
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
