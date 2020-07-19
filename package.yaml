@@ -38,6 +38,7 @@ library:
   - containers
   - transformers
   - process
+  - unix
   exposed-modules:
   - NFEval
   - Interact
@@ -48,6 +49,8 @@ library:
   - GalaxyTxt
   - GalaxyRun
   - CurlCmd
+  - Game
+  - GameRun
   other-modules:
   - MonadicParser
   - ListDesugar
