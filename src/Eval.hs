@@ -376,6 +376,16 @@ data Value
 -- >>> reduce pure IntMap.empty (Ap (Prim Pow2) (Prim (Num 8)))
 -- PAp (Num 256) []
 --
+-- | I combinator
+-- >>> reduce pure IntMap.empty (Ap (Prim I) (Prim (Num 1)))
+-- PAp (Num 1) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim I) (Prim I))
+-- PAp I []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim I) (Ap (Prim Add) (Prim (Num 1))))
+-- PAp Add [Prim (Num 1)]
+--
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
