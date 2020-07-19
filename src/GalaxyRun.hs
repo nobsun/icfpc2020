@@ -46,7 +46,9 @@ protocol1 = do
   putStrLn $ "dat: " ++ show dat
   putStrLn $ "other: " ++ show xs
 
-interacts :: (NFValue -> IO (Int, Int)) -> IntMap Expr -> Expr -> State -> (Int, Int) -> IO [(State, [Image])]
+interacts :: (NFValue -> IO (Int, Int))
+          -> IntMap Expr -> Expr
+          -> State -> (Int, Int) -> IO [(State, [Image])]
 interacts send env protocol istate ivector = do
   let loop state vector = unsafeInterleaveIO $ do
         case step env protocol state vector of
@@ -58,7 +60,8 @@ interacts send env protocol istate ivector = do
               (:) (newState, asImages dat) <$> loop newState newVector
   loop istate ivector
 
-rangedInteracts :: (NFValue -> IO (Int, Int)) -> IntMap Expr -> Expr
+rangedInteracts :: (NFValue -> IO (Int, Int))
+                -> IntMap Expr -> Expr
                 -> ((Int, Int), (Int, Int))
                 -> IO [((Int, Int), [(State, [Image])])]
 rangedInteracts send env protocol ((minx, miny), (maxx, maxy)) =
