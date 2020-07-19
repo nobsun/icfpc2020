@@ -4,6 +4,8 @@ module Game (
   makeRequest,
 
   ResponseTag (..),
+  GameStage (..),
+  PlayerRole (..),
   decodeResponse,
   decodeResponse_,
   ) where
@@ -48,7 +50,46 @@ decodeResponseCode =
     dispatch 2 = Just GAME_STAGE
     dispatch _ = Nothing
 
-decodeResponse_ :: Expr -> Either String (ResponseTag, Maybe (Int, Expr, Expr))
+data GameStage
+  = NotYetStarted
+  | AlreadyStarted
+  | Finished
+  deriving (Eq, Show)
+
+decodeGameStage :: Int -> Maybe GameStage
+decodeGameStage =
+    dispatch
+  where
+    dispatch 0 = Just NotYetStarted
+    dispatch 1 = Just AlreadyStarted
+    dispatch 2 = Just Finished
+    dispatch _ = Nothing
+
+data PlayerRole
+  = Attacker
+  | Defender
+  deriving (Eq, Show)
+
+decodePlayerRole :: Int -> Maybe PlayerRole
+decodePlayerRole =
+    dispatch
+  where
+    dispatch 0 = Just Attacker
+    dispatch 1 = Just Defender
+    dispatch _ = Nothing
+
+decodeStaticInfo :: Expr -> Either String (Expr, PlayerRole, Expr, Expr, Expr)
+decodeStaticInfo x = do
+  let raise = Left . ("decodeStaticInfo: " ++)
+  es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
+  case es of
+    x0 : Prim (Num rc) : x2 : x3 : x4 : _ -> do
+      role <- maybe (raise $ "unknown player-role code: " ++ show rc) return $ decodePlayerRole rc
+      return (x0, role, x2, x3, x4)
+    _                                     ->
+      raise $ "unknown static-info expression: " ++ show es
+
+decodeResponse_ :: Expr -> Either String (ResponseTag, Maybe (GameStage, PlayerRole, Expr))
 decodeResponse_ x = do
   let raise = Left . ("decodeResponse: " ++)
   ees     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
@@ -60,12 +101,16 @@ decodeResponse_ x = do
   body <- case t of
             WRONG_REQUEST                            -> return Nothing
             GAME_STAGE    -> case es of
-              Prim (Num gst) : staticKey : state : _ -> return $ Just (gst, staticKey, state)
-              _                                      -> raise $ "unknown gameStage response: " ++ show es
+              Prim (Num stc) : static : state : _ -> do
+                gst <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeGameStage stc
+                (_, role, _, _, _) <- decodeStaticInfo static
+                return $ Just (gst, role, state)
+              _                                   ->
+                raise $ "unknown gameStage response: " ++ show es
 
   return (t, body)
 
-decodeResponse :: Expr -> Either String (Int, Expr, Expr)
+decodeResponse :: Expr -> Either String (GameStage, PlayerRole, Expr)
 decodeResponse x = do
   (t, body) <- decodeResponse_ x
   case t of
