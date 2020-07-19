@@ -58,25 +58,6 @@ data Value
 -- :}
 -- PAp (Num 42) []
 --
--- | Equality
--- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num 0))) (Prim (Num 0)))
--- PAp T []
---
--- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num 0))) (Prim (Num 1)))
--- PAp F []
---
--- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num 0))) (Prim (Num 0)))
--- PAp F []
---
--- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num 0))) (Prim (Num 1)))
--- PAp T []
---
--- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num 0)))
--- PAp T []
---
--- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num (-2))))
--- PAp F []
---
 -- | Succ
 -- >>> reduce pure IntMap.empty (Ap (Prim Succ) (Prim (Num 0)))
 -- PAp (Num 1) []
@@ -223,6 +204,44 @@ data Value
 -- in reduce pure env (Ap (Ap (Prim Mul) (Prim (Var 1030))) (Prim (Num 1)))
 -- :}
 -- PAp (Num 42) []
+--
+-- | Equality and Boolean
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num 0))) (Prim (Num 0)))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num 0))) (Prim (Num 1)))
+-- PAp F []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num 0))) (Prim (Num (-1))))
+-- PAp F []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num (-1)))) (Prim (Num (-1))))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Eq) (Prim (Num (-1)))) (Prim (Num (-2))))
+-- PAp F []
+--
+-- | Strict Less-Than
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num 0))) (Prim (Num 0)))
+-- PAp F []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num 0))) (Prim (Num 1)))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num 0)))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num (-2))))
+-- PAp F []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-2)))) (Prim (Num (-1))))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num 0)))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num (-3))))
+-- PAp F []
 --
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
