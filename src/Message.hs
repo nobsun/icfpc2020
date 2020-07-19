@@ -4,6 +4,8 @@ module Message (
   Token (..),
   Expr (..),
   toExpr,
+
+  nil, cons,
   fromList,
   toList, toList',
   ) where
@@ -110,6 +112,12 @@ toExpr = (fst <$>) . runParser (expr <* eof)
 
 -----
 
+nil :: Expr
+nil = Prim Nil
+
+cons :: Expr -> Expr -> Expr
+cons e1 e2 = Ap (Ap (Prim Cons) e1) e2
+
 -- | fromList
 --
 -- >>> fromList $ map Prim [Num 1, Num 2, Num 3]
@@ -117,9 +125,6 @@ toExpr = (fst <$>) . runParser (expr <* eof)
 ---
 fromList :: [Expr] -> Expr
 fromList = foldr cons nil
-  where
-    nil = Prim Nil
-    cons a d = Ap (Ap (Prim Cons) a) d
 
 toList :: Expr -> Maybe [Expr]
 toList (Prim Nil)                   = Just []
