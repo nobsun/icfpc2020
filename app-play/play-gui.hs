@@ -233,8 +233,13 @@ processEvent ev =
       (EventWindowPos _ x y) ->
           printEvent "window pos" [show x, show y]
 
-      (EventWindowSize _ width height) ->
+      (EventWindowSize _ width height) -> do
           printEvent "window size" [show width, show height]
+          modify $ \s -> s
+            { stateWindowWidth  = width
+            , stateWindowHeight = height
+            }
+          adjustWindow
 
       (EventWindowClose _) ->
           printEvent "window close" []
