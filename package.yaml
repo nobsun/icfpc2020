@@ -102,8 +102,9 @@ executables:
     - -threaded
     dependencies:
     - icfpc2020
+    - containers
     - JuicyPixels
-    - process  
+    - process
 
 tests:
   icfpc2020-test:
