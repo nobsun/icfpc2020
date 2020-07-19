@@ -4,6 +4,7 @@ module Message (
   Token (..),
   Expr (..),
   toExpr,
+  fromList,
   ) where
 
 import qualified Data.Tree as T
@@ -105,6 +106,19 @@ expr = do
 
 toExpr :: [Token] -> Maybe Expr
 toExpr = (fst <$>) . runParser (expr <* eof)
+
+-----
+
+-- | fromList
+--
+-- >>> fromList $ map Prim [Num 1, Num 2, Num 3]
+-- Ap (Ap (Prim Cons) (Prim (Num 1))) (Ap (Ap (Prim Cons) (Prim (Num 2))) (Ap (Ap (Prim Cons) (Prim (Num 3))) (Prim Nil)))
+---
+fromList :: [Expr] -> Expr
+fromList = foldr cons nil
+  where
+    nil = Prim Nil
+    cons a d = Ap (Ap (Prim Cons) a) d
 
 -----
 
