@@ -2,7 +2,7 @@ module GameRun (
   run,
   ) where
 
-import Game (PacketTag (..), makeRequest)
+import Game (RequestTag (..), makeRequest)
 import CurlCmd (gameSend)
 import Message (Expr (Prim), Prim (Nil, Num), fromList)
 import Modulate (modulate)
@@ -18,7 +18,7 @@ run server playerKeyStr = do
   cmdR    <- request_ COMMANDS nil
   putStrLn $ "commands response: " ++ cmdR
 
-request :: String -> Int -> PacketTag -> Expr -> IO String
+request :: String -> Int -> RequestTag -> Expr -> IO String
 request server playerKey ptag dexpr = do
   let reqData = modulate $ makeRequest playerKey ptag dexpr
   gameSend server reqData
