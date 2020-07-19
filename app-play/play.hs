@@ -9,6 +9,7 @@ import qualified Data.Set as Set
 import Data.Word
 import qualified Codec.Picture as Picture
 import System.IO
+import Text.Read
 
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import Interact
@@ -32,6 +33,18 @@ saveImages prefix images = do
     Picture.writePng fname img
 
 
+readPixel :: IO (Int, Int)
+readPixel = do
+  hPutStr stderr "Enter pixel> "
+  hFlush stderr
+  s <- getLine
+  case readEither s of
+    Right px -> return px
+    Left err -> do
+      hPutStrLn stderr err
+      readPixel
+
+
 main :: IO ()
 main = do
   ps <- getGalaxyExprs
@@ -43,13 +56,11 @@ main = do
         n <- readIORef stepRef
         writeIORef stepRef $! n + 1
         saveImages ("step" ++ show n) (asImages val)
-        hPutStr stderr "Enter pixel> "
-        hFlush stderr
-        readLn
+        readPixel
 
   hPutStr stderr "Enter pixel> "
   hFlush stderr
-  pt <- readLn
+  pt <- readPixel
 
   (st, images) <- Interact.interact send env galaxy SNil pt
   print st
