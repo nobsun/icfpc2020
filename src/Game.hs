@@ -5,13 +5,13 @@ module Game (
 
   ResponseTag (..),
   GameStage (..),
-  PlayerRole (..),
+  ShipRole (..),
   Response,
   decodeResponse,
   decodeResponse_,
   ) where
 
-import Message (Expr (Prim), Prim (Num), fromList, toList)
+import Message (Expr (Ap, Prim), Prim (Num, Cons), fromList, toList)
 
 data RequestTag
   = CREATE
@@ -37,6 +37,20 @@ makeRequest :: Int -> RequestTag -> Expr -> Expr
 makeRequest playerKey rtag dataExpr =
   fromList [ Prim $ Num $ requestCode rtag, Prim $ Num playerKey, dataExpr ]
 
+
+{-
+data Command
+  = Accelerate Int (Int, Int)
+  | Detonate   Int
+  | Shoot      Int (Int, Int) Expr
+
+shipId :: Command -> Int
+shipId (Accelerate x _) = x
+shipId (Detonate x)     = x
+shipId (Shoot x _ _)    = x
+
+-- encodeCommand :: Command
+ -}
 
 data ResponseTag
   = WRONG_REQUEST
@@ -66,31 +80,64 @@ decodeGameStage =
     dispatch 2 = Just Finished
     dispatch _ = Nothing
 
-data PlayerRole
+data ShipRole
   = Attacker
   | Defender
   deriving (Eq, Show)
 
-decodePlayerRole :: Int -> Maybe PlayerRole
-decodePlayerRole =
+decodeShipRole :: Int -> Maybe ShipRole
+decodeShipRole =
     dispatch
   where
     dispatch 0 = Just Attacker
     dispatch 1 = Just Defender
     dispatch _ = Nothing
 
-decodeStaticInfo :: Expr -> Either String (Expr, PlayerRole, Expr, Expr, Expr)
+decodeStaticInfo :: Expr -> Either String (Expr, ShipRole, Expr, Expr, Expr)
 decodeStaticInfo x = do
   let raise = Left . ("decodeStaticInfo: " ++)
   es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
   case es of
     x0 : Prim (Num rc) : x2 : x3 : x4 : _ -> do
-      role <- maybe (raise $ "unknown player-role code: " ++ show rc) return $ decodePlayerRole rc
+      role <- maybe (raise $ "unknown player-role code: " ++ show rc) return $ decodeShipRole rc
       return (x0, role, x2, x3, x4)
     _                                     ->
       raise $ "unknown static-info expression: " ++ show es
 
-type Response  = (GameStage, PlayerRole, Expr)
+decodeGameState :: Expr -> Either String ((Expr, Expr), (ShipRole, Expr, (Int, Int), (Int, Int), (Expr, Expr, Expr, Expr)), [Expr])
+decodeGameState x = do
+  let raise = Left . ("decodeGameState: " ++)
+  es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
+
+  (gtick, x1, shipe, cmdse) <- case es of
+    gtick : x1 : sce : _ -> do
+      sc <- maybe (raise $ "failed to convert ships-and-commands to list: " ++ show x) return $ toList sce
+      case sc of
+        s : c : _  -> do
+          return (gtick, x1, s, c)
+        _          ->
+          raise $ "unknown ships-and-command expression: " ++ show sc
+    _                            ->
+      raise $ "unknown game-state expression: " ++ show es
+
+  ship <- maybe (raise $ "failed to convert ship to list: " ++ show x) return $ toList shipe
+  (role, shipId, pos, vel, other) <- case ship of
+    (Prim (Num rc) : shipId :
+     Ap (Ap (Prim Cons) (Prim (Num px))) (Prim (Num py)) :
+     Ap (Ap (Prim Cons) (Prim (Num vx))) (Prim (Num vy)) :
+     x4 : x5 : x6 : x7 : _) -> do
+      role <- maybe (raise $ "unknown player-role code: " ++ show rc) return $ decodeShipRole rc
+      return (role, shipId, (px, py), (vx, vy), (x4, x5, x6, x7))
+    _                                                                                             ->
+      raise $ "unknown ship expression: " ++ show ship
+
+  cmds <- maybe (raise $ "failed to convert commands to list: " ++ show x) return $ toList cmdse
+
+  return ((gtick, x1), (role, shipId, pos, vel, other), cmds)
+
+type GameState = (Expr, (ShipRole, Expr, (Int, Int), (Int, Int)), [Expr])
+
+type Response  = (GameStage, ShipRole, GameState)
 
 decodeResponse_ :: Expr -> Either String (ResponseTag, Maybe Response)
 decodeResponse_ x = do
@@ -106,8 +153,9 @@ decodeResponse_ x = do
             GAME_STAGE    -> case es of
               Prim (Num stc) : static : state : _ -> do
                 gst <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeGameStage stc
-                (_, role, _, _, _) <- decodeStaticInfo static
-                return $ Just (gst, role, state)
+                (_x0, role, _x2, _x3, _x4) <- decodeStaticInfo static
+                ((gtick, _x1), (shipRole, shipId, pos, vel, _x4567), cmds) <- decodeGameState state
+                return $ Just (gst, role, (gtick, (shipRole, shipId, pos, vel), cmds))
               _                                   ->
                 raise $ "unknown gameStage response: " ++ show es
 
