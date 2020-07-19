@@ -3,7 +3,7 @@ module GameRun (
   ) where
 
 import Game
-  (RequestTag (..), encodeRequest, decodeResponse,
+  (RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
    Command (Shoot), encodeCommand,
    GameStage (..), ShipInfo, ShipRole, oppositeRole, )
 import CurlCmd (gameSend)
@@ -58,7 +58,16 @@ commandLoop request_ myRole iships =
       mapM_ (putLn . ("my-ships: " ++) . show) myShips
       mapM_ (putLn . ("command: " ++) . show) commands
       cmdR    <- request_ COMMANDS $ fromList $ map encodeCommand $ commands
-      res@(stage, _, (_tick, ships1)) <- either fail return $ decodeResponse cmdR
+      let recover em = do
+            putStrLn $ "response decode error: " ++ em
+            putStrLn "recovering using previous state..."
+            return (AlreadyStarted, ships)
+          response (_tag, mayResp) =
+            maybe
+            (recover "wrong request error.")
+            (\ (stage, _, (_tick, ships1)) -> return (stage, ships1))
+            mayResp
+      res@(stage, ships1) <- either recover response $ decodeResponse_ cmdR
       putLn $ "response: " ++ show res
       case stage of
         NotYetStarted   -> loop (n+1) ships1
