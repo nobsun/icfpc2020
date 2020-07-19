@@ -32,15 +32,18 @@ saveImages prefix images = do
     let fname = prefix ++ "-ch" ++ show i ++ ".png"
     hPutStrLn stderr $ "writing " ++ fname
     Picture.writePng fname img
-  let f x y = maybe (colors !! 0) ((colors !!).fst) $ find (\(_, pixels) -> (x + xmin, y + ymin) `Set.member` Set.fromList pixels) $ zip [(1::Int)..] images
-      -- g x y = if (x + xmin, y + ymin) `Set.member` pixels' then colors !! i else colors !! 0
+
+  -- merge all images
+  let f x y = maybe (colors !! 0) ((colors !!).fst)
+              $ find (\(_, pixels) -> (x + xmin, y + ymin) `Set.member` Set.fromList pixels)
+              $ zip [(1::Int)..] images
       img = Picture.generateImage f w h
   let fname = prefix ++ "-all" ++ ".png"
   hPutStrLn stderr $ "writing " ++ fname
   Picture.writePng fname img
   where
     -- TODO
-    colors = [ Picture.PixelRGB8   0   0   0
+    colors = [ Picture.PixelRGB8   0   0   0 -- background
              , Picture.PixelRGB8 255   0   0
              , Picture.PixelRGB8   0 255   0
              , Picture.PixelRGB8   0   0 255
