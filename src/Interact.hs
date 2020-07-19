@@ -18,7 +18,7 @@ import Data.IntMap.Lazy (IntMap)
 
 import NFEval (NFValue (..), reduceNF')
 import qualified NFEval as NF
-import Message hiding (toExpr)
+import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 
 
