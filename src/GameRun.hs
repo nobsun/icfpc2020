@@ -45,18 +45,19 @@ commandLoop request_ myRole iships =
             | ((role, shipId, _, _), _) <- ships
             , role == myRole ]
           enemyTargets =
-            [ pos <+> vel
+            [ pos <+> vel <//> 4
             | ((role, _, pos, vel), _) <- ships
             , role == enemyRole ]
           firstTarget = take 1 enemyTargets
 
           commands =
-            [ encodeCommand $ Shoot shipId target nil
+            [ Shoot shipId target nil
             | shipId <- myShips
             , target <- firstTarget ]
 
+      mapM_ (putLn . ("my-ships: " ++) . show) myShips
       mapM_ (putLn . ("command: " ++) . show) commands
-      cmdR    <- request_ COMMANDS $ fromList commands
+      cmdR    <- request_ COMMANDS $ fromList $ map encodeCommand $ commands
       res@(stage, _, (_tick, ships1)) <- either fail return $ decodeResponse cmdR
       putLn $ "response: " ++ show res
       case stage of
@@ -64,7 +65,10 @@ commandLoop request_ myRole iships =
         AlreadyStarted  -> loop (n+1) ships1
         Finished        -> return ()
 
+    (x, y) <//> n = (x `quot` n, y `quot` n)
     (px, py) <+> (vx, vy) = (px + vx, py + vy)
+    infixl 6 <+>
+    infixl 7 <//>
 
 nullLoop :: (RequestTag -> Expr -> IO Expr) -> IO ()
 nullLoop request_ =
