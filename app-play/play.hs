@@ -112,23 +112,24 @@ main = do
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
 
-  stepRef <- newIORef (0::Int)
   let send :: NFValue -> IO (Int, Int)
       send val = do
-        n <- readIORef stepRef
-        writeIORef stepRef $! n + 1
-        saveImages ("step" ++ show n) (asImages val)
-        if optServerURL opt == "" then
-          readPixel
-        else do
-          -- FIXME: use optServerURL and optApiKey
-          e <- sendNF val
-          return $! asPixel $ reduceNF' IntMap.empty e -- XXX
+        -- FIXME: use optServerURL and optApiKey
+        e <- sendNF val
+        let px = asPixel $ reduceNF' IntMap.empty e -- XXX
+        -- hPutStrLn stderr $ "send( " ++ show val ++ ") => " ++ show px
+        return px
 
-  pt <- readPixel
-  (st, images) <- Interact.interact send env galaxy SNil pt
-  print st
-  saveImages "final" images
+  stepRef <- newIORef (1::Int)
+  let loop s = do
+        n <- readIORef stepRef
+        writeIORef stepRef $! n+1
+        -- hPutStrLn stderr $ "state = " ++ show s
+        pt <- readPixel
+        (s', images) <- Interact.interact send env galaxy s pt
+        saveImages ("step" ++ show n) images
+        loop s'
+  loop SNil
 
 
 asPixel :: NFValue -> (Int, Int)
