@@ -107,6 +107,30 @@ executables:
     - JuicyPixels
     - process
 
+  play-gui:
+    main:                play-gui.hs
+    source-dirs:         app-play
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    when:
+      - condition: flag(static)
+        then:
+          ghc-options: -static
+        else: {}
+    dependencies:
+    - icfpc2020
+    - containers
+    - process
+    - curl
+    - GLFW-b
+    - OpenGL
+    - base
+    - mtl
+    - pretty
+    - stm
+    - transformers
+
 tests:
   icfpc2020-test:
     main:                spec.hs
