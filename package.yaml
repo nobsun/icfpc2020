@@ -40,16 +40,19 @@ library:
   - process
   exposed-modules:
   - NFEval
-  - Eval
   - Interact
   - Message
   - Modulate
-  - ListDesugar
   - Send
   - TextParser
   - GalaxyTxt
   - GalaxyRun
   - CurlCmd
+  other-modules:
+  - MonadicParser
+  - ListDesugar
+  - Draw
+  - Eval
   source-dirs: src
 
 executables:
