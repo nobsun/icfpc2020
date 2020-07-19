@@ -104,15 +104,15 @@ _test_interact = do
       galaxy = env IntMap.! galaxyKey
       send _ = return (0, 0)
   (_, images) <- interact send env galaxy SNil (0,0)
+  let xmin = minimum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
+      xmax = maximum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
+      ymin = minimum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
+      ymax = maximum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
+      w = xmax - xmin + 1
+      h = ymax - ymin + 1
   forM_ (zip [(0::Int)..] images) $ \(i, pixels) -> do
     print pixels
-    let xmin = minimum $ 0 : [x | (x,_y) <- pixels]
-        xmax = maximum $ 0 : [x | (x,_y) <- pixels]
-        ymin = minimum $ 0 : [y | (_x,y) <- pixels]
-        ymax = maximum $ 0 : [y | (_x,y) <- pixels]
-        w = xmax - xmin + 1
-        h = ymax - ymin + 1
-        pixels' = Set.fromList pixels
+    let pixels' = Set.fromList pixels
         f x y = if (x + xmin, y + ymin) `Set.member` pixels' then 255 else 0
         img :: Picture.Image Word8
         img = Picture.generateImage f w h 
@@ -129,17 +129,16 @@ _test_interact_2 = do
       toNFValue (Prim prim) = NFPAp prim []
       send val = liftM (asPixel . toNFValue) $ Send.send $ toExpr val
   (_, images) <- interact send env galaxy SNil (0,0)
+  let xmin = minimum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
+      xmax = maximum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
+      ymin = minimum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
+      ymax = maximum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
+      w = xmax - xmin + 1
+      h = ymax - ymin + 1
   forM_ (zip [(0::Int)..] images) $ \(i, pixels) -> do
     print pixels
-    let xmin = minimum $ 0 : [x | (x,_y) <- pixels]
-        xmax = maximum $ 0 : [x | (x,_y) <- pixels]
-        ymin = minimum $ 0 : [y | (_x,y) <- pixels]
-        ymax = maximum $ 0 : [y | (_x,y) <- pixels]
-        w = xmax - xmin + 1
-        h = ymax - ymin + 1
-        pixels' = Set.fromList pixels
+    let pixels' = Set.fromList pixels
         f x y = if (x + xmin, y + ymin) `Set.member` pixels' then 255 else 0
         img :: Picture.Image Word8
         img = Picture.generateImage f w h 
     Picture.writePng ("output" ++ show i ++ ".png") img
-  
