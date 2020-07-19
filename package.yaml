@@ -36,7 +36,6 @@ library:
   - attoparsec
   - bytestring
   - containers
-  - JuicyPixels
   - transformers
   - process
   exposed-modules:
