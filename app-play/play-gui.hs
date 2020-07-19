@@ -43,8 +43,8 @@ data State = State
 type Demo = RWST Env () State IO
 
 sizeX, sizeY :: Int
-sizeX = 100
-sizeY = 100
+sizeX = 150
+sizeY = 150
 
 --------------------------------------------------------------------------------
 
@@ -275,7 +275,7 @@ processEvent ev =
               let width = stateWindowWidth state
                   height = stateWindowHeight state
                   x' = ((round x-(width`div`2))*2*sizeX)`div`width
-                  y' = -((round y-(height`div`2))*2*sizeY)`div`height-- because GL.ortho (-sizeX) (sizeX)
+                  y' = ((round y-(height`div`2))*2*sizeY)`div`height-- because GL.ortho (-sizeX) (sizeX)
               modify $ \s -> s
                 { statePoint = Just (x', y')
                 }
@@ -286,7 +286,7 @@ processEvent ev =
           let width = stateWindowWidth state
               height = stateWindowHeight state
               x' = ((round x-(width`div`2))*2*sizeX)`div`width
-              y' = -((round y-(height`div`2))*2*sizeY)`div`height
+              y' = ((round y-(height`div`2))*2*sizeY)`div`height
           printEvent "cursor pos" [show x', show y']
 
       (EventCursorEnter _ cs) -> do
@@ -328,7 +328,6 @@ draw = do
         flip mapM_ (zip [1, 0.8 ..] pics) $ \(i,pic) -> do
           GL.color (GL.Color3 i i i :: GL.Color3 GL.GLfloat)
           GL.renderPrimitive GL.Quads $ mapM_ GL.vertex $ concatMap box pic
-          print pic
       else
         return ()
 
