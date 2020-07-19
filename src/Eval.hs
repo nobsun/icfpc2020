@@ -190,6 +190,40 @@ data Value
 -- :}
 -- PAp (Num 15) []
 --
+-- | Integer Division
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num 4))) (Prim (Num 2)))
+-- PAp (Num 2) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num 4))) (Prim (Num 3)))
+-- PAp (Num 1) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num 4))) (Prim (Num 4)))
+-- PAp (Num 1) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num 4))) (Prim (Num 5)))
+-- PAp (Num 0) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num 5))) (Prim (Num 2)))
+-- PAp (Num 2) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num 6))) (Prim (Num (-2))))
+-- PAp (Num (-3)) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num 5))) (Prim (Num (-3))))
+-- PAp (Num (-1)) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num (-5)))) (Prim (Num 3)))
+-- PAp (Num (-1)) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim Div) (Prim (Num (-5)))) (Prim (Num (-3))))
+-- PAp (Num 1) []
+--
+-- >>> :{
+-- let env = IntMap.fromList [(1030, Prim (Num 42))]
+-- in reduce pure env (Ap (Ap (Prim Mul) (Prim (Var 1030))) (Prim (Num 1)))
+-- :}
+-- PAp (Num 42) []
+--
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
