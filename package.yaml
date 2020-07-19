@@ -49,13 +49,13 @@ library:
   - TextParser
   - GalaxyTxt
   - GalaxyRun
+  - CurlCmd
   source-dirs: src
 
 executables:
   solution:
     main:                solution.hs
-    other-modules:
-    - CurlCmd
+    other-modules:       []
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
@@ -80,7 +80,6 @@ executables:
     main:                solution-dyn.hs
     other-modules:
     - CurlLib
-    - CurlCmd
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
