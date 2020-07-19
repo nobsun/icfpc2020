@@ -9,7 +9,7 @@ import qualified Data.IntMap as IM
 
 import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
 -- import Send (sendNF)
-import Eval (NFValue (..), reduceNF')
+import NFEval (NFValue (..), reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 
 

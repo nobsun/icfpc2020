@@ -8,7 +8,7 @@ import System.Process (readProcess)
 
 import Message (Prim (Cons, Nil, Num), Expr (Ap, Prim))
 import Modulate (modulate_, demodulate)
-import Eval (NFValue (NFPAp))
+import NFEval (NFValue (NFPAp))
 
 sendNF :: NFValue -> IO Expr
 sendNF = sendExpr . asExpr

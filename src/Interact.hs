@@ -22,7 +22,7 @@ import qualified Data.Set as Set
 import Data.Word
 import qualified Codec.Picture as Picture
 
-import Eval
+import NFEval
 import Message hiding (toExpr)
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import qualified Send
