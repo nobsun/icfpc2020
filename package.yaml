@@ -49,6 +49,7 @@ library:
   - TextParser
   - GalaxyTxt
   - GalaxyRun
+  - Send
   source-dirs: src
 
 executables:

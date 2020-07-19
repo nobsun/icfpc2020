@@ -16,15 +16,16 @@ import Text.PrettyPrint   hiding ((<>))
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW          as GLFW
 
-import Message (Expr)
+import Message (Expr (..), Prim (..))
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
-import qualified Interact                  as Interact
+import qualified Interact
+import qualified Send
+import qualified NFEval
 
 --------------------------------------------------------- -----------------------
 
 data Env = Env
     { envEventsChan    :: TQueue Event
-    , envClickChan     :: TQueue (Int,Int)
     , envWindow        :: !GLFW.Window
     , envExpr          :: IntMap Expr
     }
@@ -33,6 +34,8 @@ data State = State
     { stateWindowWidth     :: !Int
     , stateWindowHeight    :: !Int
     , statePicture         :: [Interact.Image]
+    , statePoint           :: Maybe (Int,Int)
+    , stateState           :: Interact.State
     }
 
 type Demo = RWST Env () State IO
@@ -94,11 +97,9 @@ main = do
 
         (fbWidth, fbHeight) <- GLFW.getFramebufferSize win
 
-        atomically $ writeTQueue clickChan (0,0)
         ps <- getGalaxyExprs
         let env = Env
               { envEventsChan    = eventsChan
-              , envClickChan     = clickChan
               , envWindow        = win
               , envExpr          = IntMap.fromList ps
               }
@@ -106,6 +107,8 @@ main = do
               { stateWindowWidth     = fbWidth
               , stateWindowHeight    = fbHeight
               , statePicture         = []
+              , statePoint           = Just (0,0)
+              , stateState           = Interact.SNil
               }
         runDemo env state
 
@@ -179,18 +182,26 @@ runDemo env state =
 run :: Demo ()
 run = do
     state <- get
-    chan <- asks envClickChan
-    let send tc val = do
-          point <- atomically $ readTQueue tc
-          print point
-          return point
-    m <- asks envExpr
-    (st, images) <- liftIO $ Interact.interact (send chan) m (m IntMap.! galaxyKey) Interact.SNil (0,0)
-    modify $ \s -> s
-      { statePicture = images
-      }
-    draw
+    if isJust (statePoint state)
+      then do
+      let send val = do
+            -- FIXME
+            e <- Send.sendNF val
+            let px = asPixel $ NFEval.reduceNF' IntMap.empty e --XXX
+            return px
+          st = stateState state
+          pt = fromJust (statePoint state)
+      m <- asks envExpr
+      (st', images) <- liftIO $ Interact.interact send m (m IntMap.! galaxyKey) st pt
+      modify $ \s -> s
+        { statePicture = images
+        , stateState   = st'
+        , statePoint   = Nothing
+        }
+      else
+        return ()
 
+    draw
     win <- asks envWindow
     liftIO $ do
         GLFW.swapBuffers win
@@ -200,6 +211,10 @@ run = do
 
     q <- liftIO $ GLFW.windowShouldClose win
     unless q run
+
+asPixel :: NFEval.NFValue -> (Int,Int)
+asPixel (NFEval.NFPAp Cons [x,y]) = (NFEval.asNum x, NFEval.asNum y)
+asPixel x = error $ "asPixel: " ++ show x
 
 processEvents :: Demo ()
 processEvents = do
@@ -250,18 +265,25 @@ processEvent ev =
           when (mb == GLFW.MouseButton'1 && mbs == GLFW.MouseButtonState'Released) $ do
               win <- asks envWindow
               (x,y) <- liftIO $ GLFW.getCursorPos win
-              chan <- asks envClickChan
               state <- get
               let width = stateWindowWidth state
                   height = stateWindowHeight state
-              liftIO $ atomically $ writeTQueue chan (round x-(width`div`2), round y-(height`div`2))
+                  x' = round x-(width`div`2)
+                  y' = round y-(height`div`2)
+              modify $ \s -> s
+                { statePoint = Just (x', y')
+                }
+              printEvent "mouse clicked" [show x', show y']
 
       (EventCursorPos _ x y) -> do
-          let x' = round x :: Int
-              y' = round y :: Int
+          state <- get
+          let width = stateWindowWidth state
+              height = stateWindowHeight state
+              x' = round x-(width`div`2)
+              y' = round y-(height`div`2)
           printEvent "cursor pos" [show x', show y']
 
-      (EventCursorEnter _ cs) ->
+      (EventCursorEnter _ cs) -> do
           printEvent "cursor enter" [show cs]
 
       (EventScroll _ x y) -> do
