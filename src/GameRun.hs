@@ -2,9 +2,12 @@ module GameRun (
   run,
   ) where
 
-import Game (RequestTag (..), encodeRequest, decodeResponse)
+import Game
+  (RequestTag (..), encodeRequest, decodeResponse,
+   Command (Shoot), encodeCommand,
+   GameStage (..), ShipInfo, ShipRole, oppositeRole, )
 import CurlCmd (gameSend)
-import Message (Expr (Prim), Prim (Nil, Num), fromList, toList)
+import Message (Expr, num, nil, fromList, toList)
 import Modulate (modulate, demodulate)
 
 run :: String -> String -> IO ()
@@ -12,14 +15,65 @@ run server playerKeyStr = do
   playerKey <- readIO playerKeyStr
   putStrLn $ "playerKey: " ++ show playerKey
   let request_ = request server playerKey
+
   joinR   <- request_ JOIN  nil
   listPrint "JOIN response: " joinR
   either print print $ decodeResponse joinR
   startR  <- request_ START (startParam (2, 3, 4, 5))
   listPrint "START response: " startR
-  either print print $ decodeResponse startR
-  cmdR    <- request_ COMMANDS nil
-  either print print $ decodeResponse cmdR
+
+  case decodeResponse startR of
+    Left e     ->  do
+      putStrLn $ "somethind wrong: " ++ e
+      nullLoop request_
+    Right (_stage, myRole, (_tick, ships))  ->
+      commandLoop request_ myRole ships
+
+
+commandLoop :: (RequestTag -> Expr -> IO Expr)
+            -> ShipRole
+            -> [(ShipInfo, [Expr])]
+            -> IO ()
+commandLoop request_ myRole iships =
+    loop iships
+  where
+    enemyRole = oppositeRole myRole
+    loop ships = do
+      let myShips =
+            [ shipId
+            | ((role, shipId, _, _), _) <- ships
+            , role == myRole ]
+          enemyTargets =
+            [ pos <+> vel
+            | ((role, _, pos, vel), _) <- ships
+            , role == enemyRole ]
+          firstTarget = take 1 enemyTargets
+
+          commands =
+            [ encodeCommand $ Shoot shipId target nil
+            | shipId <- myShips
+            , target <- firstTarget ]
+
+      cmdR    <- request_ COMMANDS $ fromList commands
+      (stage, _, (_tick, ships1)) <- either fail return $ decodeResponse cmdR
+      case stage of
+        NotYetStarted   -> loop ships1
+        AlreadyStarted  -> loop ships1
+        Finished        -> return ()
+
+    (px, py) <+> (vx, vy) = (px + vx, py + vy)
+
+nullLoop :: MonadFail m => (RequestTag -> Expr -> m Expr) -> m ()
+nullLoop request_ =
+    loop
+  where
+    loop = do
+      cmdR    <- request_ COMMANDS nil
+      (stage, _, _) <- either fail return $ decodeResponse cmdR
+      case stage of
+        NotYetStarted   -> loop
+        AlreadyStarted  -> loop
+        Finished        -> return ()
 
 listPrint :: String -> Expr -> IO ()
 listPrint prefix =
@@ -37,7 +91,4 @@ request server playerKey rtag dexpr = do
 
 startParam :: (Int, Int, Int, Int) -> Expr
 startParam (n1, n2, n3, n4) =
-  fromList $ map (Prim . Num) [n1, n2, n3, n4]
-
-nil :: Expr
-nil = Prim Nil
+  fromList $ map num [n1, n2, n3, n4]
