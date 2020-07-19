@@ -354,6 +354,28 @@ data Value
 -- >>> reduce pure IntMap.empty (Ap (Ap (Prim F) (Ap (Prim Succ) (Prim (Num 5)))) (Prim T))
 -- PAp T []
 --
+-- | Power of Two
+-- >>> reduce pure IntMap.empty (Ap (Prim Pow2) (Prim (Num 2)))
+-- PAp (Num 4) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Pow2) (Prim (Num 3)))
+-- PAp (Num 8) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Pow2) (Prim (Num 4)))
+-- PAp (Num 16) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Pow2) (Prim (Num 5)))
+-- PAp (Num 32) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Pow2) (Prim (Num 6)))
+-- PAp (Num 64) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Pow2) (Prim (Num 7)))
+-- PAp (Num 128) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Pow2) (Prim (Num 8)))
+-- PAp (Num 256) []
+--
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
