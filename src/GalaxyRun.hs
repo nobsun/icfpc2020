@@ -54,12 +54,12 @@ interacts :: (NFValue -> IO (Int, Int))
 interacts send env protocol istate ivector = do
   let loop state vector = unsafeInterleaveIO $ do
         case step env protocol state vector of
-          (flag, newState, dat) ->
-            if flag == 0 then
-              return [(newState, asImages dat)]
-            else do
-              newVector <- send dat
-              (:) (newState, asImages dat) <$> loop newState newVector
+          (flag, newState, dat)
+            | flag == 0  ->
+                return [(newState, asImages dat)]
+            | otherwise  -> do
+                newVector <- send dat
+                (:) (newState, asImages dat) <$> loop newState newVector
   loop istate ivector
 
 manualInteracts :: IntMap Expr -> Expr
