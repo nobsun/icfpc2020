@@ -314,16 +314,14 @@ draw :: Demo ()
 draw = do
     env   <- ask
     state <- get
-    let pic = statePicture state
-    if pic /= []
+    let pics = statePicture state
+    if pics /= []
       then liftIO $ do
 --        print pic
-        GL.clearColor GL.$= GL.Color4 0 0 0 0
         GL.clear [GL.ColorBuffer, GL.DepthBuffer]
-        GL.color (GL.Color3 255 0 0 :: GL.Color3 GL.GLint)
-        GL.renderPrimitive GL.LineStrip $ mapM_ GL.vertex
-            [GL.Vertex2 0 0, GL.Vertex2 1 (1::GL.GLint)]
-        GL.renderPrimitive GL.Quads $ mapM_ GL.vertex $ concatMap box $ head pic
+        flip mapM_ (zip [1, 0.8 ..] pics) $ \(i,pic) -> do
+          GL.color (GL.Color4 1 1 1 i :: GL.Color4 GL.GLfloat)
+          GL.renderPrimitive GL.Quads $ mapM_ GL.vertex $ concatMap box pic
       else
         return ()
 
