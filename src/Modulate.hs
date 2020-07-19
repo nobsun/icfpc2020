@@ -19,7 +19,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8 hiding (take, takeWhile)
 
 import Numeric (showIntAtBase, readInt)
 
-import Message
+import Message (Expr (..), Prim (..))
 
 
 -- | XXX
