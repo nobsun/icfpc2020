@@ -46,6 +46,7 @@ library:
   - Message
   - Modulate
   - ListDesugar
+  - Send
   - TextParser
   - GalaxyTxt
   - GalaxyRun
@@ -105,6 +106,7 @@ executables:
     - icfpc2020
     - containers
     - JuicyPixels
+    - optparse-applicative
     - process
 
 tests:
