@@ -40,6 +40,10 @@ data State = State
 
 type Demo = RWST Env () State IO
 
+sizeX, sizeY :: Int
+sizeX = 100
+sizeY = 100
+
 --------------------------------------------------------------------------------
 
 data Event =
@@ -260,8 +264,8 @@ processEvent ev =
               state <- get
               let width = stateWindowWidth state
                   height = stateWindowHeight state
-                  x' = ((round x-(width`div`2))*200)`div`width
-                  y' = ((round y-(height`div`2))*200)`div`height-- because GL.ortho (-100) (100)
+                  x' = ((round x-(width`div`2))*2*sizeX)`div`width
+                  y' = -((round y-(height`div`2))*2*sizeY)`div`height-- because GL.ortho (-sizeX) (sizeX)
               modify $ \s -> s
                 { statePoint = Just (x', y')
                 }
@@ -271,8 +275,8 @@ processEvent ev =
           state <- get
           let width = stateWindowWidth state
               height = stateWindowHeight state
-              x' = ((round x-(width`div`2))*200)`div`width
-              y' = ((round y-(height`div`2))*200)`div`height
+              x' = ((round x-(width`div`2))*2*sizeX)`div`width
+              y' = -((round y-(height`div`2))*2*sizeY)`div`height
           printEvent "cursor pos" [show x', show y']
 
       (EventCursorEnter _ cs) -> do
@@ -300,7 +304,7 @@ adjustWindow = do
         GL.viewport   GL.$= (pos, size)
         GL.matrixMode GL.$= GL.Projection
         GL.loadIdentity
-        GL.ortho (-100) (100) (-100) (100) (-1.5) (1.5::GL.GLdouble)
+        GL.ortho (fromIntegral(-sizeX)) (fromIntegral sizeX) (fromIntegral sizeY) (fromIntegral (-sizeY)) (-1.5) (1.5::GL.GLdouble)
     draw
 
 draw :: Demo ()
