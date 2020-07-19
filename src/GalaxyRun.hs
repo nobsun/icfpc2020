@@ -8,12 +8,14 @@ module GalaxyRun (
   ) where
 
 import Prelude hiding (interact)
+import Data.Ord (comparing)
+import Data.List (maximumBy)
 import Data.IntMap (IntMap, fromList)
 import qualified Data.IntMap as IM
 import System.IO.Unsafe (unsafeInterleaveIO)
 
 import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
--- import Send (sendNF)
+import Send (sendNF)
 import NFEval (NFValue (..), asNum, asList, reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import Interact (State (SNil), Image, asImages, step, )
@@ -66,5 +68,21 @@ rangedInteracts send env protocol ((minx, miny), (maxx, maxy)) =
            , y <- [miny .. maxy]
            ]
 
--- galaxyInteracts = do
---   () <- getGalaxyProtocol
+sendGetPX :: NFValue -> IO (Int, Int)
+sendGetPX nf = do
+  e <- sendNF nf
+  case e of
+    Ap (Ap (Prim Cons) (Prim (Num n1))) (Prim (Num n2))  ->  return (n1, n2)
+    _                                                    ->  fail $ "send result is not num-pair: " ++ show e
+
+galaxyInteracts :: ((Int, Int), (Int, Int))
+                -> IO [((Int, Int), [(State, [Image])])]
+galaxyInteracts range = do
+  (env, proto) <- getGalaxyProtocol
+  rangedInteracts sendGetPX env proto range
+
+
+_run :: IO ()
+_run = do
+  gs <- galaxyInteracts ((-1000,-1000), (1000, 1000))
+  print $ maximumBy (comparing snd)  [ (length rs, v) | (v, rs) <- gs ]
