@@ -33,6 +33,8 @@ data Env = Env
 data State = State
     { stateWindowWidth     :: !Int
     , stateWindowHeight    :: !Int
+    , stateFBWidth         :: !Int
+    , stateFBHeight        :: !Int
     , statePicture         :: [Interact.Image]
     , statePoint           :: Maybe (Int,Int)
     , stateState           :: Interact.State
@@ -92,6 +94,7 @@ main = do
         GLFW.swapInterval 1
 
         (fbWidth, fbHeight) <- GLFW.getFramebufferSize win
+        (winWidth, winHeight) <- GLFW.getWindowSize win
 
         ps <- getGalaxyExprs
         let env = Env
@@ -100,8 +103,10 @@ main = do
               , envExpr          = IntMap.fromList ps
               }
             state = State
-              { stateWindowWidth     = fbWidth
-              , stateWindowHeight    = fbHeight
+              { stateWindowWidth     = winWidth
+              , stateWindowHeight    = winHeight
+              , stateFBWidth         = fbWidth
+              , stateFBHeight        = fbHeight
               , statePicture         = []
               , statePoint           = Just (0,0)
               , stateState           = Interact.SNil
@@ -256,8 +261,8 @@ processEvent ev =
       (EventFramebufferSize _ width height) -> do
           printEvent "framebuffer size" [show width, show height]
           modify $ \s -> s
-            { stateWindowWidth  = width
-            , stateWindowHeight = height
+            { stateFBWidth  = width
+            , stateFBHeight = height
             }
           adjustWindow
 
@@ -301,8 +306,8 @@ processEvent ev =
 adjustWindow :: Demo ()
 adjustWindow = do
     state <- get
-    let width  = stateWindowWidth  state
-        height = stateWindowHeight state
+    let width  = stateFBWidth  state
+        height = stateFBHeight state
         pos   = GL.Position 0 0
         size  = GL.Size (fromIntegral width) (fromIntegral height)
     liftIO $ do
