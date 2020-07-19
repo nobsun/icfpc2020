@@ -190,10 +190,10 @@ run = do
         , stateState   = st'
         , statePoint   = Nothing
         }
+      draw
       else
         return ()
 
-    draw
     win <- asks envWindow
     liftIO $ do
         GLFW.swapBuffers win
@@ -309,11 +309,11 @@ draw = do
     let pics = statePicture state
     if pics /= []
       then liftIO $ do
---        print pic
         GL.clear [GL.ColorBuffer, GL.DepthBuffer]
         flip mapM_ (zip [1, 0.8 ..] pics) $ \(i,pic) -> do
           GL.color (GL.Color3 i i i :: GL.Color3 GL.GLfloat)
           GL.renderPrimitive GL.Quads $ mapM_ GL.vertex $ concatMap box pic
+          print pic
       else
         return ()
 
