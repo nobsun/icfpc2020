@@ -6,7 +6,9 @@ module Game (
 
   ResponseTag (..),
   GameStage (..),
-  ShipRole (..),
+  ShipRole (..), oppositeRole,
+  ShipInfo,
+  GameState,
   Response,
   decodeResponse,
   decodeResponse_,
@@ -98,6 +100,13 @@ decodeShipRole =
     dispatch 1 = Just Defender
     dispatch _ = Nothing
 
+oppositeRole :: ShipRole -> ShipRole
+oppositeRole =
+    opp
+  where
+    opp Attacker = Defender
+    opp Defender = Attacker
+
 decodeStaticInfo :: Expr -> Either String (Expr, ShipRole, Expr, Expr, Expr)
 decodeStaticInfo x = do
   let raise = Left . ("decodeStaticInfo: " ++)
@@ -109,7 +118,7 @@ decodeStaticInfo x = do
     _                                     ->
       raise $ "unknown static-info expression: " ++ show es
 
-type ShipInfo = (ShipRole, Expr, (Int, Int), (Int, Int))
+type ShipInfo = (ShipRole, Int, (Int, Int), (Int, Int))
 
 decodeShipAndCommand :: Expr -> Either String ((ShipInfo, (Expr, Expr, Expr, Expr)), [Expr])
 decodeShipAndCommand sce = do
@@ -121,7 +130,7 @@ decodeShipAndCommand sce = do
 
   ship <- maybe (raise $ "failed to convert ship to list: " ++ show shipe) return $ toList shipe
   (role, shipId, pos, vel, other) <- case ship of
-    (Prim (Num rc) : shipId :
+    (Prim (Num rc) : Prim (Num shipId) :
      Ap (Ap (Prim Cons) (Prim (Num px))) (Prim (Num py)) :
      Ap (Ap (Prim Cons) (Prim (Num vx))) (Prim (Num vy)) :
      x4 : x5 : x6 : x7 : _) -> do
