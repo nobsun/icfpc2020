@@ -243,6 +243,31 @@ data Value
 -- >>> reduce pure IntMap.empty (Ap (Ap (Prim Lt) (Prim (Num (-1)))) (Prim (Num (-3))))
 -- PAp F []
 --
+-- | Modulate
+-- TODO
+--
+-- | Demodulate
+-- TODO
+--
+-- | Send
+-- TODO
+--
+-- | Negate
+-- >>> reduce pure IntMap.empty (Ap (Prim Neg) (Prim (Num 0)))
+-- PAp (Num 0) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Neg) (Prim (Num 1)))
+-- PAp (Num (-1)) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Neg) (Prim (Num (-1))))
+-- PAp (Num 1) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Neg) (Prim (Num 2)))
+-- PAp (Num (-2)) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim Neg) (Prim (Num (-2))))
+-- PAp (Num 2) []
+--
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
