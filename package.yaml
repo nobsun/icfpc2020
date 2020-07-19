@@ -36,9 +36,11 @@ library:
   - attoparsec
   - bytestring
   - containers
+  - http-conduit >= 2.3
   - transformers
   - process
   - unix
+  - utf8-string >= 1.0
   - JuicyPixels
   exposed-modules:
   - NFEval
