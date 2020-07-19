@@ -301,6 +301,7 @@ adjustWindow = do
         GL.matrixMode GL.$= GL.Projection
         GL.loadIdentity
         GL.ortho (-100) (100) (-100) (100) (-1.5) (1.5::GL.GLdouble)
+    draw
 
 draw :: Demo ()
 draw = do
