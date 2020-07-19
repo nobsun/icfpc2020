@@ -18,9 +18,13 @@ import Data.IntMap.Lazy (IntMap)
 
 import NFEval (NFValue (..), reduceNF')
 import qualified NFEval as NF
-import Message hiding (toExpr)
+import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
+import qualified ImageFile as IMG
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 
+
+type Image = IMG.Image
+{-# DEPRECATED Image "use Image in ImageFile.hs instead of this." #-}
 
 data State
   = SNum Int
@@ -33,8 +37,6 @@ stateToExpr SNil = Prim Nil
 stateToExpr (SCons a b) = Ap (Ap (Prim Cons) (stateToExpr a)) (stateToExpr b)
 stateToExpr (SNum n) = Prim (Num n)
 
-
-type Image = [(Int, Int)]
 
 asImage :: NFValue -> Image
 asImage = map asPixel . asList

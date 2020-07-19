@@ -5,6 +5,7 @@ module Message (
   Expr (..),
   toExpr,
   fromList,
+  toList, toList',
   ) where
 
 import qualified Data.Tree as T
@@ -119,6 +120,15 @@ fromList = foldr cons nil
   where
     nil = Prim Nil
     cons a d = Ap (Ap (Prim Cons) a) d
+
+toList :: Expr -> Maybe [Expr]
+toList (Prim Nil)                   = Just []
+toList (Ap (Ap (Prim Cons) e1) e2)  = (e1 :) <$> toList e2
+toList  _                           = Nothing
+
+toList' :: Expr -> [Expr]
+toList' e = maybe (error $ "toList': unable to convert to list: " ++ show e) id $ toList e
+
 
 -----
 

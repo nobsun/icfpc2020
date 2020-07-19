@@ -1,7 +1,9 @@
 module GalaxyRun (
   getGalaxyProtocol,
-  interacts,
-  rangedInteracts,
+
+  interacts, rangedInteracts,
+
+  manualInteracts, galaxyManualInteracts, galaxyManualInteracts_,
 
   runProtocol,
   protocol1,
@@ -18,7 +20,8 @@ import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
 import Send (sendNF)
 import NFEval (NFValue (..), asNum, asList, reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
-import Interact (State (SNil), Image, asImages, step, )
+import ImageFile (Image)
+import Interact (State (SNil), asImages, step, )
 
 
 getGalaxyProtocol :: IO (IntMap Expr, Expr)
@@ -46,19 +49,33 @@ protocol1 = do
   putStrLn $ "dat: " ++ show dat
   putStrLn $ "other: " ++ show xs
 
-interacts :: (NFValue -> IO (Int, Int)) -> IntMap Expr -> Expr -> State -> (Int, Int) -> IO [(State, [Image])]
+interacts :: (NFValue -> IO (Int, Int))
+          -> IntMap Expr -> Expr
+          -> State -> (Int, Int) -> IO [(State, [Image])]
 interacts send env protocol istate ivector = do
   let loop state vector = unsafeInterleaveIO $ do
         case step env protocol state vector of
-          (flag, newState, dat) ->
-            if flag == 0 then
-              return [(newState, asImages dat)]
-            else do
-              newVector <- send dat
-              (:) (newState, asImages dat) <$> loop newState newVector
+          (flag, newState, dat)
+            | flag == 0  ->
+                return [(newState, asImages dat)]
+            | otherwise  -> do
+                newVector <- send dat
+                (:) (newState, asImages dat) <$> loop newState newVector
   loop istate ivector
 
-rangedInteracts :: (NFValue -> IO (Int, Int)) -> IntMap Expr -> Expr
+manualInteracts :: IntMap Expr -> Expr
+                -> State -> [(Int, Int)] -> [((State, [Image]), Bool)]
+manualInteracts env protocol istate ivectors =
+    loop istate ivectors
+  where
+    loop _      []    = []
+    loop state (v:vs) =
+        ((newState, asImages dat), flag /= 0) : loop newState vs
+      where
+        (flag, newState, dat) = step env protocol state v
+
+rangedInteracts :: (NFValue -> IO (Int, Int))
+                -> IntMap Expr -> Expr
                 -> ((Int, Int), (Int, Int))
                 -> IO [((Int, Int), [(State, [Image])])]
 rangedInteracts send env protocol ((minx, miny), (maxx, maxy)) =
@@ -81,8 +98,15 @@ galaxyInteracts range = do
   (env, proto) <- getGalaxyProtocol
   rangedInteracts sendGetPX env proto range
 
-
 _run :: IO ()
 _run = do
   gs <- galaxyInteracts ((-1000,-1000), (1000, 1000))
   print $ maximumBy (comparing snd)  [ (length rs, v) | (v, rs) <- gs ]
+
+galaxyManualInteracts :: [(Int, Int)] -> IO [((State, [Image]), Bool)]
+galaxyManualInteracts vs = do
+  (env, proto) <- getGalaxyProtocol
+  return $ manualInteracts env proto SNil vs
+
+galaxyManualInteracts_ :: IO [((State, [Image]), Bool)]
+galaxyManualInteracts_ = galaxyManualInteracts $ repeat (0, 0)
