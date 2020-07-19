@@ -9,7 +9,7 @@ import qualified Data.IntMap as IM
 
 import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
 -- import Send (sendNF)
-import Eval (NFValue (..), reduceNF')
+import NFEval (NFValue (..), asNum, asList, reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 
 
@@ -37,12 +37,3 @@ protocol1 = do
   putStrLn $ "newSt: " ++ show newSt
   putStrLn $ "dat: " ++ show dat
   putStrLn $ "other: " ++ show xs
-
-asNum :: NFValue -> Int
-asNum (NFPAp (Num n) []) = n
-asNum v = error $ "asNum: " ++ show v
-
-asList :: NFValue -> [NFValue]
-asList (NFPAp Nil []) = []
-asList (NFPAp Cons [x, y]) = x : asList y
-asList v = error $ "asList: " ++ show v

@@ -26,7 +26,7 @@ saveImages prefix images = do
     let pixels' = Set.fromList pixels
         f x y = if (x + xmin, y + ymin) `Set.member` pixels' then 255 else 0
         img :: Picture.Image Word8
-        img = Picture.generateImage f w h 
+        img = Picture.generateImage f w h
     let fname = prefix ++ "-ch" ++ show i ++ ".png"
     hPutStrLn stderr $ "writing " ++ fname
     Picture.writePng fname img
@@ -34,7 +34,7 @@ saveImages prefix images = do
 
 main :: IO ()
 main = do
-  ps <- getGalaxyExprs  
+  ps <- getGalaxyExprs
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
 

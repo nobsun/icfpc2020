@@ -8,7 +8,7 @@ import System.Process (readProcess)
 
 import Message (Prim (Cons, Nil, Num), Expr (Ap, Prim))
 import Modulate (modulate_, demodulate)
-import Eval (NFValue (NFPAp))
+import NFEval (NFValue, asExpr)
 
 sendNF :: NFValue -> IO Expr
 sendNF = sendExpr . asExpr
@@ -22,12 +22,6 @@ sendExpr e = do
 _exampleSend0 :: IO Expr
 _exampleSend0 =
   sendExpr (Ap (Ap (Prim Cons) (Prim $ Num 0)) (Prim Nil))
-
-asExpr :: NFValue -> Expr
-asExpr (NFPAp p@(Num _) [])    = Prim p
-asExpr (NFPAp p@Nil [])        = Prim p
-asExpr (NFPAp Cons [n1, n2])   = Ap (Ap (Prim Cons) (asExpr n1)) (asExpr n2)
-asExpr  nfv                    = error $ "asExpr: not NF or cannot convert to expr: " ++ show nfv
 
 send_ :: String -> IO String
 send_ me = do

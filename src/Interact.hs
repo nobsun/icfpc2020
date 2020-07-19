@@ -22,7 +22,8 @@ import qualified Data.Set as Set
 import Data.Word
 import qualified Codec.Picture as Picture
 
-import Eval
+import NFEval (NFValue (..), reduceNF')
+import qualified NFEval as NF
 import Message hiding (toExpr)
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import qualified Send
@@ -75,13 +76,10 @@ step env protocol state (x,y) =
 
 
 asList :: NFValue -> [NFValue]
-asList (NFPAp Nil []) = []
-asList (NFPAp Cons [x, y]) = x : asList y
-asList v = error $ "asList: " ++ show v
+asList = NF.asList
 
 asNum :: NFValue -> Int
-asNum (NFPAp (Num n) []) = n
-asNum v = error $ "asNum: " ++ show v
+asNum = NF.asNum
 
 asState :: NFValue -> State
 asState (NFPAp Nil []) = SNil
@@ -110,6 +108,7 @@ _test_interact = do
       ymax = maximum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
       w = xmax - xmin + 1
       h = ymax - ymin + 1
+  putStrLn $ show (xmin, ymin) ++ " " ++ show (xmax, ymax)
   forM_ (zip [(0::Int)..] images) $ \(i, pixels) -> do
     print pixels
     let pixels' = Set.fromList pixels
@@ -123,14 +122,12 @@ _test_interact_2 = do
   ps <- getGalaxyExprs
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
-      toExpr (NFPAp prim args) = foldl (\e arg -> Ap e (toExpr arg)) (Prim prim) args
-      toExpr x = error $ "unsupported data constructor:" ++ show x
       toNFValue (Ap a b) =
         case toNFValue a of
           NFPAp prim args -> NFPAp prim (args ++ [toNFValue b])
           x               -> error $ "unsupported data constructor: " ++ show x
       toNFValue (Prim prim) = NFPAp prim []
-      send val = liftM (asPixel . toNFValue) $ Send.sendExpr $ toExpr val
+      send val = liftM (asPixel . toNFValue) $ Send.sendExpr $ NF.asExpr val
   (_, images) <- interact send env galaxy SNil (0,0)
   let xmin = minimum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
       xmax = maximum $ 0 : [x | pixels <- images, (x,_y) <- pixels]

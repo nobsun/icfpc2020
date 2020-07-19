@@ -10,6 +10,8 @@ import qualified Data.Set as Set
 import Data.Set (Set)
 
 import Message
+import NFEval (pwr2Def, chkbDef)
+import qualified NFEval as NF
 import Modulate (modulate_, demodulate)
 
 -- 変数の参照を解決する
@@ -62,7 +64,7 @@ data Value
 -- PAp (Num 1) []
 --
 -- >>> reduce pure IntMap.empty (Ap (Prim Succ) (Prim (Num 1)))
--- PAp (Num 2) [] 
+-- PAp (Num 2) []
 --
 -- >>> reduce pure IntMap.empty (Ap (Prim Succ) (Prim (Num 2)))
 -- PAp (Num 3) []
@@ -580,12 +582,6 @@ reduce send env = f
        (F38, f38Def),
        (Interact, interactDef)]
 
-pwr2Def :: Expr
-pwr2Def = Ap (Ap (Prim S) (Ap (Ap (Prim C) (Ap (Prim Eq) (Prim (Num 0)))) (Prim (Num 1)))) (Ap (Ap (Prim B) (Ap (Prim Mul) (Prim (Num 2)))) (Ap (Ap (Prim B) (Prim Pow2)) (Ap (Prim Add) (Prim (Num (-1))))))
-
-chkbDef :: Expr
-chkbDef = Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim C)) (Ap (Ap (Prim B) (Ap (Prim C) (Ap (Prim C) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Ap (Ap (Prim S) (Prim I)) (Prim I)))) (Prim Lt)))) (Prim Eq))))) (Ap (Ap (Prim S) (Prim Mul)) (Prim I))))) (Prim Nil)))) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Prim Cons))) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim S)) (Ap (Ap (Prim B) (Ap (Prim B) (Prim Cons))) (Ap (Prim C) (Prim Div))))) (Ap (Prim C) (Ap (Ap (Prim S) (Ap (Ap (Prim B) (Prim B)) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim B)) (Prim Add))) (Prim Neg)))) (Ap (Ap (Prim B) (Ap (Prim S) (Prim Mul))) (Prim Div)))))))) (Ap (Ap (Prim C) (Ap (Ap (Prim B) (Prim B)) (Prim Chkb))) (Ap (Ap (Prim C) (Prim Add)) (Prim (Num 2)))))
-
 modemDef :: ([Int], Expr)
 modemDef = ([0], Ap (Prim Dem) (Ap (Prim Mod) (Prim (LVar 0))))
 
@@ -595,11 +591,8 @@ f38Def = ([2,0], Ap (Ap (Ap (Prim If0) (Ap (Prim Car) (Prim (LVar 0)))) (Ap (Ap 
 interactDef :: ([Int], Expr)
 interactDef = ([2,4,3], Ap (Ap (Prim F38) (Prim (LVar 2))) (Ap (Ap (Prim (LVar 2)) (Prim (LVar 4))) (Prim (LVar 3))))
 
-
-data NFValue
-  = NFPAp Prim [NFValue]
-  | NFPicture (Set (Int,Int))
-  deriving (Eq, Show)
+type NFValue = NF.NFValue
+{-# DEPRECATED NFValue "use NFValue in NFEval.hs instead of this." #-}
 
 reduceNF :: (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m NFValue
 reduceNF send env = normalize send env <=< reduce send env
@@ -609,97 +602,9 @@ normalize send env = f
   where
     f (PAp prim args) = do
       args' <- mapM (f <=< reduce send env) args
-      return $ NFPAp prim args'
-    f (Picture xs) = return $ NFPicture xs
+      return $ NF.NFPAp prim args'
+    f (Picture xs) = return $ NF.NFPicture xs
 
 
 reduceNF' :: IntMap Expr -> Expr -> NFValue
-reduceNF' env = ev
-  where
-    ev :: Expr -> NFValue
-    ev (Prim (Var n)) =
-      case IntMap.lookup n env of
-        Just e -> ev e
-        Nothing -> error $ "cannot find (Var " ++ show n ++ ") in environment"
-    ev (Prim prim) =
-      if arity prim == 0 then
-        redPrim prim []
-      else
-        NFPAp prim []
-    ev (Ap fun arg) = ap (ev fun) (ev arg)
-
-    ap :: NFValue -> NFValue -> NFValue
-    ap fun arg =
-      case fun of
-        NFPAp prim xs ->
-          if arity prim <= length xs then
-            error "should not happen"
-          else if arity prim == length xs + 1 then
-            redPrim prim (xs ++ [arg])
-          else
-            NFPAp prim (xs ++ [arg])
-        _ -> error $ show fun ++ " is not a function"
-
-    asNum :: NFValue -> Int
-    asNum (NFPAp (Num n) []) = n
-    asNum e = error $ "asNum: " ++ show e
-
-    asCons :: NFValue -> (NFValue, NFValue)
-    asCons (NFPAp Cons [x1, x2]) = (x1, x2)
-    asCons e = error $ "asCons: " ++ show e
-
-    asConsOrNil :: NFValue -> (Maybe (NFValue, NFValue))
-    asConsOrNil (NFPAp Cons [x1, x2]) = Just (x1, x2)
-    asConsOrNil (NFPAp Nil []) = Nothing
-    asConsOrNil e = error $ "asConsOrNil: " ++ show e
-
-    asList :: NFValue -> [NFValue]
-    asList xs =
-      case asConsOrNil xs of
-        Nothing -> []
-        Just (x, ys) -> x : asList ys
-
-    redPrim prim@(Num _) _ = NFPAp prim []
-    redPrim prim@(Var _) _ = NFPAp prim []
-    redPrim Eq [x1, x2]
-      | asNum x1 == asNum x2 = NFPAp T []
-      | otherwise = NFPAp F []
-    redPrim Lt [x1, x2]
-      | asNum x1 < asNum x2 = NFPAp T []
-      | otherwise = NFPAp F []
-    redPrim Succ [x1] = NFPAp (Num (asNum x1 + 1)) []
-    redPrim Pred [x1] = NFPAp (Num (asNum x1 - 1)) []
-    redPrim Add [x1, x2] = NFPAp (Num (asNum x1 + asNum x2)) []
-    redPrim Mul [x1, x2] = NFPAp (Num (asNum x1 * asNum x2)) []
-    redPrim Div [x1, x2] = NFPAp (Num (asNum x1 `quot` asNum x2)) []
-    redPrim Mod [_x] = undefined
-    redPrim Dem [_x] = undefined
-    redPrim Send [_x] = undefined
-    redPrim Neg [x] = NFPAp (Num (- asNum x)) []
-    redPrim S [x1, b, c] = ap (ap x1 c) (ap b c)
-    redPrim C [x1, b, c] = ap (ap x1 c) b
-    redPrim B [x1, b, c] = ap x1 (ap b c)
-    redPrim T [x1, _x2] = x1
-    redPrim F [_x1, x2] = x2
-    redPrim Pow2 [x] = NFPAp (Num (2 ^ asNum x)) []
-    redPrim Pow2 [] = ev pwr2Def
-    redPrim I [x] = x
-    redPrim Cons [x1, x2, x3] = ap (ap x3 x1) x2
-    redPrim Car [x] = ap x (NFPAp T [])
-    redPrim Cdr [x] = ap x (NFPAp F [])
-    redPrim Nil [_x] = NFPAp T []
-    redPrim IsNil [x] =
-      case x of
-        NFPAp Nil [] -> NFPAp T []
-        NFPAp Cons [_, _] -> NFPAp F []
-        _ -> error $ "IsNil: " ++ show x
-    redPrim If0 [x1, x2, x3] = if asNum x1 == 0 then x2 else x3
-    redPrim Draw [xs] =
-      let cs = map ((\(x1, x2) -> (asNum x1, asNum x2)) . asCons) $ asList xs
-       in NFPicture (Set.fromList cs)
-    redPrim Chkb [] = ev chkbDef
-    redPrim MultiDraw [x] =
-      case asConsOrNil x of
-        Nothing -> NFPAp Nil []
-        Just (x0, x1) -> NFPAp Cons [redPrim Draw [x0], redPrim MultiDraw [x1]]
-    redPrim prim args = error $ "redPrim: " ++ show prim ++ " " ++ show args
+reduceNF' = NF.reduceNF'
