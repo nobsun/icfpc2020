@@ -15,20 +15,22 @@ run server playerKeyStr = do
   joinR   <- request_ JOIN  nil
   either print print $ decodeResponse joinR
   startR  <- request_ START (startParam (2, 3, 4, 5))
-  listPrint startR
+  listPrint "START response: " startR
   either print print $ decodeResponse startR
   cmdR    <- request_ COMMANDS nil
   either print print $ decodeResponse cmdR
 
-listPrint :: Expr -> IO ()
-listPrint = maybe (putStrLn "Nothing") (mapM_ print . zip [0 :: Int ..]) . toList
+listPrint :: String -> Expr -> IO ()
+listPrint prefix =
+    maybe (putStrLn "Nothing") (mapM_ pprint . zip [0 :: Int ..]) . toList
+  where
+    pprint (n, e) = putStrLn $ prefix ++ ": " ++ show n ++ ": " ++ show e
 
 request :: String -> Int -> RequestTag -> Expr -> IO Expr
 request server playerKey rtag dexpr = do
-  let req = modulate $ makeRequest playerKey rtag dexpr
-  putStrLn $ show rtag ++ " command request: " ++ req
-  resp  <- gameSend server req
-  putStrLn $ show rtag ++ " commands response: " ++ resp
+  let req = makeRequest playerKey rtag dexpr
+  listPrint (show rtag ++ " request: ") req
+  resp  <- gameSend server $ modulate req
   either (fail . ("request: fail to demodulate response: " ++)) return $ demodulate resp
   -- either fail return $ decodeResponse expr
 
