@@ -45,6 +45,7 @@ data Command
   = Accelerate Int (Int, Int)
   | Detonate   Int
   | Shoot      Int (Int, Int) Expr
+  deriving Show
 
 cmdShipId :: Command -> Int
 cmdShipId (Accelerate x _) = x

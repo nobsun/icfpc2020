@@ -35,11 +35,12 @@ commandLoop :: (RequestTag -> Expr -> IO Expr)
             -> [(ShipInfo, [Expr])]
             -> IO ()
 commandLoop request_ myRole iships =
-    loop iships
+    loop (0 :: Int) iships
   where
     enemyRole = oppositeRole myRole
-    loop ships = do
-      let myShips =
+    loop n ships = do
+      let putLn = putStrLn . ((show n ++ ": ") ++)
+          myShips =
             [ shipId
             | ((role, shipId, _, _), _) <- ships
             , role == myRole ]
@@ -54,22 +55,25 @@ commandLoop request_ myRole iships =
             | shipId <- myShips
             , target <- firstTarget ]
 
+      mapM_ (putLn . ("command: " ++) . show) commands
       cmdR    <- request_ COMMANDS $ fromList commands
-      (stage, _, (_tick, ships1)) <- either fail return $ decodeResponse cmdR
+      res@(stage, _, (_tick, ships1)) <- either fail return $ decodeResponse cmdR
+      putLn $ "response: " ++ show res
       case stage of
-        NotYetStarted   -> loop ships1
-        AlreadyStarted  -> loop ships1
+        NotYetStarted   -> loop (n+1) ships1
+        AlreadyStarted  -> loop (n+1) ships1
         Finished        -> return ()
 
     (px, py) <+> (vx, vy) = (px + vx, py + vy)
 
-nullLoop :: MonadFail m => (RequestTag -> Expr -> m Expr) -> m ()
+nullLoop :: (RequestTag -> Expr -> IO Expr) -> IO ()
 nullLoop request_ =
     loop
   where
     loop = do
       cmdR    <- request_ COMMANDS nil
-      (stage, _, _) <- either fail return $ decodeResponse cmdR
+      res@(stage, _, _) <- either fail return $ decodeResponse cmdR
+      putStrLn $ "nloop: " ++ show res
       case stage of
         NotYetStarted   -> loop
         AlreadyStarted  -> loop
