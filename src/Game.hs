@@ -47,8 +47,8 @@ decodeResponseCode :: Int -> Maybe ResponseTag
 decodeResponseCode =
     dispatch
   where
-    dispatch 1 = Just WRONG_REQUEST
-    dispatch 2 = Just GAME_STAGE
+    dispatch 0 = Just WRONG_REQUEST
+    dispatch 1 = Just GAME_STAGE
     dispatch _ = Nothing
 
 data GameStage
