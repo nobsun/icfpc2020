@@ -19,8 +19,7 @@ saveImages prefix images = do
   let ps = (0, 0):[p | pixels <- images, p <- pixels]
       min'max = minimum &&& maximum
       ((xmin, xmax), (ymin, ymax)) = min'max *** min'max $ unzip ps
-      w = xmax - xmin + 1
-      h = ymax - ymin + 1
+      (w, h) = (xmax - xmin + 1, ymax - ymin + 1)
   print ((xmin,ymin), (xmax,ymax))
   forM_ (zip [(0::Int)..] images) $ \(i, pixels) -> do
     let pixels' = Set.fromList pixels
