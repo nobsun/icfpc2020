@@ -20,7 +20,8 @@ import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
 import Send (sendNF)
 import NFEval (NFValue (..), asNum, asList, reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
-import Interact (State (SNil), Image, asImages, step, )
+import ImageFile (Image)
+import Interact (State (SNil), asImages, step, )
 
 
 getGalaxyProtocol :: IO (IntMap Expr, Expr)

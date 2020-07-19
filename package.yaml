@@ -39,6 +39,7 @@ library:
   - transformers
   - process
   - unix
+  - JuicyPixels
   exposed-modules:
   - NFEval
   - Interact
@@ -46,6 +47,7 @@ library:
   - Modulate
   - Send
   - TextParser
+  - ImageFile
   - GalaxyTxt
   - GalaxyRun
   - CurlCmd
@@ -110,9 +112,7 @@ executables:
     dependencies:
     - icfpc2020
     - containers
-    - JuicyPixels
     - optparse-applicative
-    - process
 
 tests:
   icfpc2020-test:
