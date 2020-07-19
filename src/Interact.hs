@@ -92,14 +92,14 @@ asState v = error $ "asState: " ++ show v
 
 
 _test_step = do
-  ps <- getGalaxyExprs  
+  ps <- getGalaxyExprs
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
   let ret = step env galaxy SNil (0,0)
   print ret
 
 _test_interact = do
-  ps <- getGalaxyExprs  
+  ps <- getGalaxyExprs
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
       send _ = return (0, 0)
@@ -115,11 +115,11 @@ _test_interact = do
     let pixels' = Set.fromList pixels
         f x y = if (x + xmin, y + ymin) `Set.member` pixels' then 255 else 0
         img :: Picture.Image Word8
-        img = Picture.generateImage f w h 
+        img = Picture.generateImage f w h
     Picture.writePng ("output" ++ show i ++ ".png") img
 
 _test_interact_2 = do
-  ps <- getGalaxyExprs  
+  ps <- getGalaxyExprs
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
       toExpr (NFPAp prim args) = foldl (\e arg -> Ap e (toExpr arg)) (Prim prim) args
@@ -127,7 +127,7 @@ _test_interact_2 = do
         case toNFValue a of
           NFPAp prim args -> NFPAp prim (args ++ [toNFValue b])
       toNFValue (Prim prim) = NFPAp prim []
-      send val = liftM (asPixel . toNFValue) $ Send.send $ toExpr val
+      send val = liftM (asPixel . toNFValue) $ Send.sendExpr $ toExpr val
   (_, images) <- interact send env galaxy SNil (0,0)
   let xmin = minimum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
       xmax = maximum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
@@ -140,5 +140,5 @@ _test_interact_2 = do
     let pixels' = Set.fromList pixels
         f x y = if (x + xmin, y + ymin) `Set.member` pixels' then 255 else 0
         img :: Picture.Image Word8
-        img = Picture.generateImage f w h 
+        img = Picture.generateImage f w h
     Picture.writePng ("output" ++ show i ++ ".png") img
