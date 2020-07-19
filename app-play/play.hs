@@ -57,10 +57,7 @@ main = do
         saveImages ("step" ++ show n) (asImages val)
         readPixel
 
-  hPutStr stderr "Enter pixel> "
-  hFlush stderr
   pt <- readPixel
-
   (st, images) <- Interact.interact send env galaxy SNil pt
   print st
   saveImages "final" images
