@@ -24,6 +24,19 @@ data NFValue
   | NFPicture (Set (Int,Int))
   deriving (Eq, Show)
 
+asNum :: NFValue -> Int
+asNum (NFPAp (Num n) []) = n
+asNum v = error $ "NFValue: asNum: " ++ show v
+
+asList :: NFValue -> [NFValue]
+asList (NFPAp Nil []) = []
+asList (NFPAp Cons [x, y]) = x : asList y
+asList v = error $ "NFValue: asList: " ++ show v
+
+asExpr :: NFValue -> Expr
+asExpr (NFPAp prim args) = foldl (\e arg -> Ap e (asExpr arg)) (Prim prim) args
+asExpr x = error $ "NFValue: asExpr: unsupported data constructor: " ++ show x
+
 
 reduceNF' :: IntMap Expr -> Expr -> NFValue
 reduceNF' env = ev
@@ -52,10 +65,6 @@ reduceNF' env = ev
             NFPAp prim (xs ++ [arg])
         _ -> error $ show fun ++ " is not a function"
 
-    asNum :: NFValue -> Int
-    asNum (NFPAp (Num n) []) = n
-    asNum e = error $ "asNum: " ++ show e
-
     asCons :: NFValue -> (NFValue, NFValue)
     asCons (NFPAp Cons [x1, x2]) = (x1, x2)
     asCons e = error $ "asCons: " ++ show e
@@ -64,12 +73,6 @@ reduceNF' env = ev
     asConsOrNil (NFPAp Cons [x1, x2]) = Just (x1, x2)
     asConsOrNil (NFPAp Nil []) = Nothing
     asConsOrNil e = error $ "asConsOrNil: " ++ show e
-
-    asList :: NFValue -> [NFValue]
-    asList xs =
-      case asConsOrNil xs of
-        Nothing -> []
-        Just (x, ys) -> x : asList ys
 
     redPrim prim@(Num _) _ = NFPAp prim []
     redPrim prim@(Var _) _ = NFPAp prim []
