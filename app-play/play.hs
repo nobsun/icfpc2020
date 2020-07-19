@@ -5,6 +5,7 @@ import Control.Arrow ((&&&), (***))
 import Control.Monad
 import qualified Data.IntMap.Lazy as IntMap
 import Data.IORef
+import Data.List (find)
 import qualified Data.Set as Set
 import Data.Word
 import qualified Codec.Picture as Picture
@@ -22,6 +23,7 @@ saveImages prefix images = do
       ((xmin, xmax), (ymin, ymax)) = min'max *** min'max $ unzip ps
       (w, h) = (xmax - xmin + 1, ymax - ymin + 1)
   print ((xmin,ymin), (xmax,ymax))
+  
   forM_ (zip [(0::Int)..] images) $ \(i, pixels) -> do
     let pixels' = Set.fromList pixels
         f x y = if (x + xmin, y + ymin) `Set.member` pixels' then 255 else 0
@@ -30,6 +32,19 @@ saveImages prefix images = do
     let fname = prefix ++ "-ch" ++ show i ++ ".png"
     hPutStrLn stderr $ "writing " ++ fname
     Picture.writePng fname img
+  let f x y = maybe (colors !! 0) ((colors !!).fst) $ find (\(_, pixels) -> (x + xmin, y + ymin) `Set.member` Set.fromList pixels) $ zip [(1::Int)..] images
+      -- g x y = if (x + xmin, y + ymin) `Set.member` pixels' then colors !! i else colors !! 0
+      img = Picture.generateImage f w h
+  let fname = prefix ++ "-all" ++ ".png"
+  hPutStrLn stderr $ "writing " ++ fname
+  Picture.writePng fname img
+  where
+    -- TODO
+    colors = [ Picture.PixelRGB8   0   0   0
+             , Picture.PixelRGB8 255   0   0
+             , Picture.PixelRGB8   0 255   0
+             , Picture.PixelRGB8   0   0 255
+             ]
 
 
 readPixel :: IO (Int, Int)
