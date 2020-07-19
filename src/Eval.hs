@@ -328,6 +328,19 @@ data Value
 -- >>> reduce pure IntMap.empty (Ap (Ap (Ap (Prim B) (Prim Succ)) (Ap (Prim Mul) (Prim (Num 3)))) (Prim (Num 3)))
 -- PAp (Num 10) []
 --
+-- | K combinator
+-- >>> reduce pure IntMap.empty  (Ap (Ap (Prim T) (Prim (Num 1))) (Prim (Num 5)))
+-- PAp (Num 1) []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim T) (Prim T)) (Prim I))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim T) (Prim T)) (Ap (Prim Succ) (Prim (Num 5))))
+--PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Ap (Prim T) (Ap (Prim Succ) (Prim (Num 5)))) (Prim T))
+-- PAp (Num 6) []
+--
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
