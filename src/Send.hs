@@ -4,6 +4,8 @@ module Send (
   send_,
   ) where
 
+import Data.ByteString.Lazy.UTF8 as BLU
+import Network.HTTP.Simple
 import System.Process (readProcess)
 
 import Message (Prim (Cons, Nil, Num), Expr (Ap, Prim))
@@ -23,15 +25,34 @@ _exampleSend0 :: IO Expr
 _exampleSend0 =
   sendExpr (Ap (Ap (Prim Cons) (Prim $ Num 0)) (Prim Nil))
 
+useCurl :: Bool
+useCurl = False
+
 send_ :: String -> IO String
 send_ me = do
   putStrLn $ "send: req: " ++ me
-  rbody <- readProcess
-           "curl"
-           ["-H", "accept: */*",
-            "-H", "Content-Type: text/plain",
-            "-d", me, "-s",
-            "https://icfpc2020-api.testkontur.ru/aliens/send?apiKey=a52c864b55954e25adc32abf69bc22b9"]
-           ""
+  let url = "https://icfpc2020-api.testkontur.ru/aliens/send?apiKey=a52c864b55954e25adc32abf69bc22b9"
+
+  rbody <-
+    if useCurl then do
+      rbody <- readProcess
+               "curl"
+               ["-H", "accept: */*",
+                "-H", "Content-Type: text/plain",
+                "-d", me, "-s",
+                url]
+               ""
+      return rbody
+    else do
+      -- see https://github.com/icfpcontest2020/starterkit-haskell/blob/master/app/Main.hs
+      request' <- parseRequest ("POST " ++ url)
+      let request = setRequestBodyLBS (BLU.fromString me) request'
+      response <- httpLBS request
+      let statuscode = show (getResponseStatusCode response)
+      case statuscode of
+          "200" -> return ()
+          _ -> error ("Unexpected server response:\nHTTP code: " ++ statuscode ++ "\nResponse body: " ++ BLU.toString (getResponseBody response))
+      return $ BLU.toString $ getResponseBody response
+
   putStrLn $ "send: res: " ++ rbody
   return rbody
