@@ -1,20 +1,24 @@
 module Message (
   Prim (..),
+  arity,
   Token (..),
   Expr (..),
   toExpr,
+  fromList,
   ) where
 
-import Control.Applicative (empty)
-import Control.Monad.Trans.State (StateT, runStateT, get, put)
-
 import qualified Data.Tree as T
+
+import MonadicParser (runParser, token, eof)
+import qualified MonadicParser as MP
 
 -----
 
 data Prim
   = Num Int
   | Var Int
+  | MBits String  -- modulated bits - string of '0' '1'
+  | LVar Int      -- local variable for function definition
   | Eq | Lt          -- 2 args
   | Succ | Pred      -- 1 arg
   | Add | Mul | Div  -- 2 arg
@@ -23,16 +27,56 @@ data Prim
   | Neg              -- 1 arg
   | S | C | B        -- 3 arg
   | T {- True, K combinator -} | F {- False, flip K -}  -- 2 arg
-  | Pow2             -- 1 arg
+  | Pow2             -- 1 arg (NOTE: 0-arityで再帰的に定義されたコンビネータとして扱うべき?)
   | I                -- 1 arg
   | Cons             -- 3 arg
   | Car | Cdr        -- 1 arg
   | Nil | IsNil      -- 1 arg
   | If0              -- 3 arg
   | Draw             -- 1 arg
-  | Chkb             -- 2 arg
+  | Chkb             -- 0 arg
   | MultiDraw        -- 1 arg
-  deriving (Eq, Show)
+
+  | Modem            -- 1 arg
+  | F38              -- 2 arg
+  | Interact         -- 3 arg
+  deriving (Eq, Ord, Show)
+
+arity :: Prim -> Int
+arity (Num _) = 0
+arity (Var _) = 0
+arity (MBits _) = 0
+arity (LVar _) = 0
+arity Eq = 2
+arity Lt = 2
+arity Succ = 1
+arity Pred = 1
+arity Add = 2
+arity Mul = 2
+arity Div = 2
+arity Mod = 1
+arity Dem = 1
+arity Send = 1
+arity Neg = 1
+arity S = 3
+arity C = 3
+arity B = 3
+arity T = 2
+arity F = 2
+arity Pow2 = 1
+arity I = 1
+arity Cons = 3
+arity Car = 1
+arity Cdr = 1
+arity Nil = 1
+arity IsNil = 1
+arity If0 = 1
+arity Draw = 1
+arity Chkb = 0
+arity MultiDraw = 1
+arity Modem = 1
+arity F38 = 2
+arity Interact = 3
 
 data Token
   = TPrim Prim
@@ -51,26 +95,7 @@ cataExpr f g = u
 
 -----
 
-type Parser = StateT [Token] Maybe
-
-runParser :: Parser a -> [Token] -> Maybe (a, [Token])
-runParser = runStateT
-
-token :: Parser Token
-token = do
-  tts <- get
-  case tts of
-    []    ->  empty
-    t:ts  ->  put ts *> pure t
-
-eof :: Parser ()
-eof = do
-  tts <- get
-  case tts of
-    []   ->  pure ()
-    _:_  ->  empty
-
------
+type Parser = MP.Parser Token Maybe
 
 expr :: Parser Expr
 expr = do
@@ -82,45 +107,18 @@ expr = do
 toExpr :: [Token] -> Maybe Expr
 toExpr = (fst <$>) . runParser (expr <* eof)
 
--- data Value = Val Prim | Fun (Value -> Value)
+-----
 
--- FORMULA --> WHNF
-
-{-
-eval :: Expr -> Expr
-eval e@(Prim _)  = e
-eval (Ap {}) = undefined
+-- | fromList
+--
+-- >>> fromList $ map Prim [Num 1, Num 2, Num 3]
+-- Ap (Ap (Prim Cons) (Prim (Num 1))) (Ap (Ap (Prim Cons) (Prim (Num 2))) (Ap (Ap (Prim Cons) (Prim (Num 3))) (Prim Nil)))
+---
+fromList :: [Expr] -> Expr
+fromList = foldr cons nil
   where
-    eval1 e0@(Ap f e) = case eval f of
-      w@(Ap {}) -> Ap w e1
-      Prim n    -> case n of
-        Succ     -> case e1 of
-          Prim (Num i) -> Prim $ Num $ succ i
-          _           -> Ap (Prim Succ) e1
-        Pred     -> case e1 of
-          Prim (Num i) -> Prim $ Num $ pred i
-          _           -> Ap (Prim Pred) e1
-        {- Mod -}
-        {- Dem -}
-        Neg      -> case e1 of
-          Prim (Num i) -> Prim $ Num $ negate i
-          _           -> Ap (Prim Neg) e1
-        Pow2     -> case e1 of
-          Prim (Num i) -> Prim $ Num $ 2^i
-          _            -> Ap (Prim Pow2) e1
-        I        -> eval e
-        Car      -> eval $ Ap e $ Prim T
-        Cdr      -> eval $ Ap e $ Prim F
-        {- Nil -} {- 引数が IsNil 以外のときは? -}
-        IsNil    -> case e1 of
-          Prim Nil     -> Prim T
-          _            -> Prim F
-        {- Draw -}
-        {- MultiDraw -}
-        _        -> e0
-      where
-        e1 = eval e
- -}
+    nil = Prim Nil
+    cons a d = Ap (Ap (Prim Cons) a) d
 
 -----
 

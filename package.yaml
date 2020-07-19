@@ -24,38 +24,57 @@ dependencies:
 ghc-options:
 - -Wall
 
+flags:
+  static:
+    description: build statically linked binaries
+    default: false
+    manual: true
+
 library:
   dependencies:
+  - array
+  - attoparsec
+  - bytestring
   - containers
   - transformers
+  - process
+  - unix
   exposed-modules:
+  - NFEval
+  - Interact
   - Message
+  - Modulate
+  - Send
+  - TextParser
+  - GalaxyTxt
+  - GalaxyRun
+  - CurlCmd
+  - Game
+  - GameRun
+  other-modules:
+  - MonadicParser
+  - ListDesugar
+  - Draw
+  - Eval
   source-dirs: src
 
 executables:
-  icfpc2020:
-    main:                Main.hs
-    source-dirs:         app
-    ghc-options:
-    - -rtsopts
-    # - -threaded
-    # - -with-rtsopts=-N
-    dependencies:
-    - icfpc2020
-
   solution:
     main:                solution.hs
-    other-modules:
-    - CurlCmd
+    other-modules:       []
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
-    - -static
     - -threaded
-    cc-options: -static
-    ld-options:
-    - -static
-    - -pthread
+    when:
+      - condition: flag(static)
+        then:
+          ghc-options: -static
+          cc-options: -static
+          ld-options:
+          - -static
+          - -pthread
+        else: {}
     dependencies:
     - icfpc2020
     - process
@@ -67,20 +86,38 @@ executables:
     main:                solution-dyn.hs
     other-modules:
     - CurlLib
-    - CurlCmd
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
-    - -static
     - -threaded
+    when:
+      - condition: flag(static)
+        then:
+          ghc-options: -static
+        else: {}
     dependencies:
     - icfpc2020
     - process
     - curl
 
+  play:
+    main:                play.hs
+    other-modules:       []
+    source-dirs:         app-play
+    ghc-options:
+    - -rtsopts
+    - -threaded
+    dependencies:
+    - icfpc2020
+    - containers
+    - JuicyPixels
+    - optparse-applicative
+    - process
+
 tests:
   icfpc2020-test:
     main:                spec.hs
+    other-modules:       []
     source-dirs:         test
     # ghc-options:
     # - -threaded
@@ -91,6 +128,7 @@ tests:
 
   icfpc2020-doctest:
     main:                doctests.hs
+    other-modules:       []
     source-dirs:         test
     # ghc-options:
     # - -threaded

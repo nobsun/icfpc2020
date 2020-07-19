@@ -5,7 +5,7 @@ set -x
 
 hpack
 cabal v1-clean || true
-cabal v1-configure
+cabal v1-configure --flags="static"
 cabal v1-build -j exe:solution
 
 mkdir -p solution
