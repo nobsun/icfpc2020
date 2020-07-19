@@ -268,8 +268,8 @@ processEvent ev =
               state <- get
               let width = stateWindowWidth state
                   height = stateWindowHeight state
-                  x' = round x-(width`div`2)
-                  y' = round y-(height`div`2)
+                  x' = ((round x-(width`div`2))*200)`div`width
+                  y' = ((round y-(height`div`2))*200)`div`height-- because GL.ortho (-100) (100)
               modify $ \s -> s
                 { statePoint = Just (x', y')
                 }
@@ -279,8 +279,8 @@ processEvent ev =
           state <- get
           let width = stateWindowWidth state
               height = stateWindowHeight state
-              x' = round x-(width`div`2)
-              y' = round y-(height`div`2)
+              x' = ((round x-(width`div`2))*200)`div`width
+              y' = ((round y-(height`div`2))*200)`div`height
           printEvent "cursor pos" [show x', show y']
 
       (EventCursorEnter _ cs) -> do
