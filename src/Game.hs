@@ -6,6 +6,7 @@ module Game (
   ResponseTag (..),
   GameStage (..),
   PlayerRole (..),
+  Response,
   decodeResponse,
   decodeResponse_,
   ) where
@@ -89,7 +90,9 @@ decodeStaticInfo x = do
     _                                     ->
       raise $ "unknown static-info expression: " ++ show es
 
-decodeResponse_ :: Expr -> Either String (ResponseTag, Maybe (GameStage, PlayerRole, Expr))
+type Response  = (GameStage, PlayerRole, Expr)
+
+decodeResponse_ :: Expr -> Either String (ResponseTag, Maybe Response)
 decodeResponse_ x = do
   let raise = Left . ("decodeResponse: " ++)
   ees     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
@@ -110,7 +113,7 @@ decodeResponse_ x = do
 
   return (t, body)
 
-decodeResponse :: Expr -> Either String (GameStage, PlayerRole, Expr)
+decodeResponse :: Expr -> Either String Response
 decodeResponse x = do
   (t, body) <- decodeResponse_ x
   case t of
