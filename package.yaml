@@ -96,6 +96,7 @@ executables:
 
   play:
     main:                play.hs
+    other-modules:       []
     source-dirs:         app-play
     ghc-options:
     - -rtsopts
@@ -110,6 +111,7 @@ executables:
 tests:
   icfpc2020-test:
     main:                spec.hs
+    other-modules:       []
     source-dirs:         test
     # ghc-options:
     # - -threaded
@@ -120,6 +122,7 @@ tests:
 
   icfpc2020-doctest:
     main:                doctests.hs
+    other-modules:       []
     source-dirs:         test
     # ghc-options:
     # - -threaded
