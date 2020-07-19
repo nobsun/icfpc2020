@@ -36,27 +36,34 @@ library:
   - attoparsec
   - bytestring
   - containers
-  - JuicyPixels
   - transformers
   - process
+  - unix
+  - JuicyPixels
   exposed-modules:
   - NFEval
-  - Eval
   - Interact
   - Message
   - Modulate
-  - ListDesugar
+  - Send
   - TextParser
+  - ImageFile
   - GalaxyTxt
   - GalaxyRun
-  - Send
+  - CurlCmd
+  - Game
+  - GameRun
+  other-modules:
+  - MonadicParser
+  - ListDesugar
+  - Draw
+  - Eval
   source-dirs: src
 
 executables:
   solution:
     main:                solution.hs
-    other-modules:
-    - CurlCmd
+    other-modules:       []
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
@@ -81,7 +88,6 @@ executables:
     main:                solution-dyn.hs
     other-modules:
     - CurlLib
-    - CurlCmd
     source-dirs:         app-solution
     ghc-options:
     - -rtsopts
@@ -98,6 +104,7 @@ executables:
 
   play:
     main:                play.hs
+    other-modules:       []
     source-dirs:         app-play
     ghc-options:
     - -rtsopts
@@ -105,8 +112,7 @@ executables:
     dependencies:
     - icfpc2020
     - containers
-    - JuicyPixels
-    - process
+    - optparse-applicative
 
   play-gui:
     main:                play-gui.hs
@@ -135,6 +141,7 @@ executables:
 tests:
   icfpc2020-test:
     main:                spec.hs
+    other-modules:       []
     source-dirs:         test
     # ghc-options:
     # - -threaded
@@ -145,6 +152,7 @@ tests:
 
   icfpc2020-doctest:
     main:                doctests.hs
+    other-modules:       []
     source-dirs:         test
     # ghc-options:
     # - -threaded

@@ -1,7 +1,7 @@
 
 import System.Environment (getArgs)
 
-import CurlCmd (run)
+import GameRun (run)
 
 main :: IO ()
 main = do

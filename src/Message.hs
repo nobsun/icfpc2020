@@ -4,6 +4,10 @@ module Message (
   Token (..),
   Expr (..),
   toExpr,
+
+  nil, cons,
+  fromList,
+  toList, toList',
   ) where
 
 import qualified Data.Tree as T
@@ -105,6 +109,31 @@ expr = do
 
 toExpr :: [Token] -> Maybe Expr
 toExpr = (fst <$>) . runParser (expr <* eof)
+
+-----
+
+nil :: Expr
+nil = Prim Nil
+
+cons :: Expr -> Expr -> Expr
+cons e1 e2 = Ap (Ap (Prim Cons) e1) e2
+
+-- | fromList
+--
+-- >>> fromList $ map Prim [Num 1, Num 2, Num 3]
+-- Ap (Ap (Prim Cons) (Prim (Num 1))) (Ap (Ap (Prim Cons) (Prim (Num 2))) (Ap (Ap (Prim Cons) (Prim (Num 3))) (Prim Nil)))
+---
+fromList :: [Expr] -> Expr
+fromList = foldr cons nil
+
+toList :: Expr -> Maybe [Expr]
+toList (Prim Nil)                   = Just []
+toList (Ap (Ap (Prim Cons) e1) e2)  = (e1 :) <$> toList e2
+toList  _                           = Nothing
+
+toList' :: Expr -> [Expr]
+toList' e = maybe (error $ "toList': unable to convert to list: " ++ show e) id $ toList e
+
 
 -----
 

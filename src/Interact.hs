@@ -9,25 +9,22 @@ module Interact
   , interact
   , step
 
-  , _test_interact
-  , _test_interact_2
   , _test_step
   ) where
 
 import Prelude hiding (interact)
-import Control.Monad
 import qualified Data.IntMap.Lazy as IntMap
 import Data.IntMap.Lazy (IntMap)
-import qualified Data.Set as Set
-import Data.Word
-import qualified Codec.Picture as Picture
 
 import NFEval (NFValue (..), reduceNF')
 import qualified NFEval as NF
-import Message hiding (toExpr)
+import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
+import qualified ImageFile as IMG
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
-import qualified Send
 
+
+type Image = IMG.Image
+{-# DEPRECATED Image "use Image in ImageFile.hs instead of this." #-}
 
 data State
   = SNum Int
@@ -40,8 +37,6 @@ stateToExpr SNil = Prim Nil
 stateToExpr (SCons a b) = Ap (Ap (Prim Cons) (stateToExpr a)) (stateToExpr b)
 stateToExpr (SNum n) = Prim (Num n)
 
-
-type Image = [(Int, Int)]
 
 asImage :: NFValue -> Image
 asImage = map asPixel . asList
@@ -94,51 +89,3 @@ _test_step = do
       galaxy = env IntMap.! galaxyKey
   let ret = step env galaxy SNil (0,0)
   print ret
-
-_test_interact :: IO ()
-_test_interact = do
-  ps <- getGalaxyExprs
-  let env = IntMap.fromList ps
-      galaxy = env IntMap.! galaxyKey
-      send _ = return (0, 0)
-  (_, images) <- interact send env galaxy SNil (0,0)
-  let xmin = minimum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
-      xmax = maximum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
-      ymin = minimum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
-      ymax = maximum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
-      w = xmax - xmin + 1
-      h = ymax - ymin + 1
-  putStrLn $ show (xmin, ymin) ++ " " ++ show (xmax, ymax)
-  forM_ (zip [(0::Int)..] images) $ \(i, pixels) -> do
-    print pixels
-    let pixels' = Set.fromList pixels
-        f x y = if (x + xmin, y + ymin) `Set.member` pixels' then 255 else 0
-        img :: Picture.Image Word8
-        img = Picture.generateImage f w h
-    Picture.writePng ("output" ++ show i ++ ".png") img
-
-_test_interact_2 :: IO ()
-_test_interact_2 = do
-  ps <- getGalaxyExprs
-  let env = IntMap.fromList ps
-      galaxy = env IntMap.! galaxyKey
-      toNFValue (Ap a b) =
-        case toNFValue a of
-          NFPAp prim args -> NFPAp prim (args ++ [toNFValue b])
-          x               -> error $ "unsupported data constructor: " ++ show x
-      toNFValue (Prim prim) = NFPAp prim []
-      send val = liftM (asPixel . toNFValue) $ Send.sendExpr $ NF.asExpr val
-  (_, images) <- interact send env galaxy SNil (0,0)
-  let xmin = minimum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
-      xmax = maximum $ 0 : [x | pixels <- images, (x,_y) <- pixels]
-      ymin = minimum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
-      ymax = maximum $ 0 : [y | pixels <- images, (_x,y) <- pixels]
-      w = xmax - xmin + 1
-      h = ymax - ymin + 1
-  forM_ (zip [(0::Int)..] images) $ \(i, pixels) -> do
-    print pixels
-    let pixels' = Set.fromList pixels
-        f x y = if (x + xmin, y + ymin) `Set.member` pixels' then 255 else 0
-        img :: Picture.Image Word8
-        img = Picture.generateImage f w h
-    Picture.writePng ("output" ++ show i ++ ".png") img
