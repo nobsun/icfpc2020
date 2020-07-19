@@ -55,9 +55,12 @@ commandLoop request_ myRole iships =
             | shipId <- myShips
             , target <- firstTarget ]
 
-      mapM_ (putLn . ("my-ships: " ++) . show) myShips
+      putLn $ "my-role: " ++ show myRole
+      putLn $ "enemy-role: " ++ show enemyRole
+      putLn $ "my-ships: " ++ show myShips
       mapM_ (putLn . ("command: " ++) . show) commands
       cmdR    <- request_ COMMANDS $ fromList $ map encodeCommand $ commands
+      listPrint "COMMANDS response: " cmdR
       let recover em = do
             putStrLn $ "response decode error: " ++ em
             putStrLn "recovering using previous state..."
