@@ -5,6 +5,7 @@ module Message (
   Expr (..),
   toExpr,
 
+  num,
   nil, cons,
   fromList,
   toList, toList',
@@ -111,6 +112,9 @@ toExpr :: [Token] -> Maybe Expr
 toExpr = (fst <$>) . runParser (expr <* eof)
 
 -----
+
+num :: Int -> Expr
+num = Prim . Num
 
 nil :: Expr
 nil = Prim Nil
