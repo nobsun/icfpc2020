@@ -49,7 +49,10 @@ shipId (Accelerate x _) = x
 shipId (Detonate x)     = x
 shipId (Shoot x _ _)    = x
 
--- encodeCommand :: Command
+-- encodeCommand :: Command -> Expr
+encodeCommand cmd =
+  where
+    dispatch (Accelerate sid vec) = [ Prim (Num 0), Prim (Num sid), cons (Prim (Num
  -}
 
 data ResponseTag
@@ -104,23 +107,17 @@ decodeStaticInfo x = do
     _                                     ->
       raise $ "unknown static-info expression: " ++ show es
 
-decodeGameState :: Expr -> Either String ((Expr, Expr), (ShipRole, Expr, (Int, Int), (Int, Int), (Expr, Expr, Expr, Expr)), [Expr])
-decodeGameState x = do
-  let raise = Left . ("decodeGameState: " ++)
-  es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
+type ShipInfo = (ShipRole, Expr, (Int, Int), (Int, Int))
 
-  (gtick, x1, shipe, cmdse) <- case es of
-    gtick : x1 : sce : _ -> do
-      sc <- maybe (raise $ "failed to convert ships-and-commands to list: " ++ show x) return $ toList sce
-      case sc of
-        s : c : _  -> do
-          return (gtick, x1, s, c)
-        _          ->
-          raise $ "unknown ships-and-command expression: " ++ show sc
-    _                            ->
-      raise $ "unknown game-state expression: " ++ show es
+decodeShipAndCommand :: Expr -> Either String ((ShipInfo, (Expr, Expr, Expr, Expr)), [Expr])
+decodeShipAndCommand sce = do
+  let raise = Left . ("decodeShipAndCommand: " ++)
+  sc <- maybe (raise $ "failed to convert to list: " ++ show sce) return $ toList sce
+  (shipe, cmdse) <- case sc of
+    s : c : _ ->  return (s, c)
+    _         ->  raise $ "unknown ship-and-commands expression: " ++ show sc
 
-  ship <- maybe (raise $ "failed to convert ship to list: " ++ show x) return $ toList shipe
+  ship <- maybe (raise $ "failed to convert ship to list: " ++ show shipe) return $ toList shipe
   (role, shipId, pos, vel, other) <- case ship of
     (Prim (Num rc) : shipId :
      Ap (Ap (Prim Cons) (Prim (Num px))) (Prim (Num py)) :
@@ -128,14 +125,31 @@ decodeGameState x = do
      x4 : x5 : x6 : x7 : _) -> do
       role <- maybe (raise $ "unknown player-role code: " ++ show rc) return $ decodeShipRole rc
       return (role, shipId, (px, py), (vx, vy), (x4, x5, x6, x7))
-    _                                                                                             ->
+    _                       ->
       raise $ "unknown ship expression: " ++ show ship
 
-  cmds <- maybe (raise $ "failed to convert commands to list: " ++ show x) return $ toList cmdse
+  cmds <- maybe (raise $ "failed to convert commands to list: " ++ show cmdse) return $ toList cmdse
+  return (((role, shipId, pos, vel), other), cmds)
 
-  return ((gtick, x1), (role, shipId, pos, vel, other), cmds)
 
-type GameState = (Expr, (ShipRole, Expr, (Int, Int), (Int, Int)), [Expr])
+decodeGameState :: Expr -> Either String ((Expr, Expr), [(ShipInfo, [Expr])])
+decodeGameState x = do
+  let raise = Left . ("decodeGameState: " ++)
+  es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
+
+  (gtick, x1, scps) <- case es of
+    gtick : x1 : scsExpr : _ -> do
+      sces <- maybe (raise $ "failed to convert ships-and-commands to list: " ++ show x) return $ toList scsExpr
+      scs <- mapM decodeShipAndCommand sces
+      let ps = [ (ship, cmds)
+               | ((ship, _x4567), cmds) <- scs]
+      return (gtick, x1, ps)
+    _                            ->
+      raise $ "unknown game-state expression: " ++ show es
+
+  return ((gtick, x1), scps)
+
+type GameState = (Expr, [(ShipInfo, [Expr])])
 
 type Response  = (GameStage, ShipRole, GameState)
 
@@ -143,21 +157,21 @@ decodeResponse_ :: Expr -> Either String (ResponseTag, Maybe Response)
 decodeResponse_ x = do
   let raise = Left . ("decodeResponse: " ++)
   ees     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
-  (c, es) <- case ees of
+  (rcode, rexprs) <- case ees of
     []               ->  raise $ "error. response list is nil."
     Prim (Num c):es  ->  return (c, es)
     e:_              ->  raise $ "unknown response expression: " ++ show e
-  t <- maybe (raise $ "unknown response code: " ++ show c) return $ decodeResponseCode c
+  t <- maybe (raise $ "unknown response code: " ++ show rcode) return $ decodeResponseCode rcode
   body <- case t of
             WRONG_REQUEST                            -> return Nothing
-            GAME_STAGE    -> case es of
+            GAME_STAGE    -> case rexprs of
               Prim (Num stc) : static : state : _ -> do
                 gst <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeGameStage stc
                 (_x0, role, _x2, _x3, _x4) <- decodeStaticInfo static
-                ((gtick, _x1), (shipRole, shipId, pos, vel, _x4567), cmds) <- decodeGameState state
-                return $ Just (gst, role, (gtick, (shipRole, shipId, pos, vel), cmds))
+                ((gtick, _x1), shipAndCmds) <- decodeGameState state
+                return $ Just (gst, role, (gtick, shipAndCmds))
               _                                   ->
-                raise $ "unknown gameStage response: " ++ show es
+                raise $ "unknown gameStage response: " ++ show rexprs
 
   return (t, body)
 
