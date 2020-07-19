@@ -406,6 +406,13 @@ data Value
 -- :}
 -- PAp T []
 --
+-- | Is Nil
+-- >>> reduce pure IntMap.empty (Ap (Prim IsNil) (Prim Nil))
+-- PAp T []
+--
+-- >>> reduce pure IntMap.empty (Ap (Prim IsNil) (Ap (Ap (Prim Cons) (Prim (Num 1))) (Prim (Num 2))))
+-- PAp F []
+--
 reduce :: forall m. (Monad m, MonadFail m) => (Expr -> m Expr) -> IntMap Expr -> Expr -> m Value
 reduce send env = f
   where
