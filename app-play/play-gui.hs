@@ -293,7 +293,7 @@ run = do
       run
 
 asPixel :: NFEval.NFValue -> (Int,Int)
-asPixel (NFEval.NFPAp Cons [x,y]) = (NFEval.asNum x, NFEval.asNum y)
+asPixel (NFEval.NFPAp Cons [x, NFEval.NFPAp Cons [y, NFEval.NFPAp Nil []]]) = (NFEval.asNum x, NFEval.asNum y)
 asPixel x = error $ "asPixel: " ++ show x
 
 processEvents :: Demo ()

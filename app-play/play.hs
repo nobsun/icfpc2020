@@ -77,5 +77,5 @@ main = do
 
 
 asPixel :: NFValue -> (Int, Int)
-asPixel (NFPAp Cons [x, y]) = (asNum x, asNum y)
+asPixel (NFPAp Cons [x, NFPAp Cons [y], NFPAp Nil []]) = (asNum x, asNum y)
 asPixel x = error $ "asPixel: " ++ show x
