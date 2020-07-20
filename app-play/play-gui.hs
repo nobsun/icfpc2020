@@ -164,8 +164,7 @@ main = do
                   let send val = do
                         -- FIXME
                         e <- Send.sendExpr (Interact.svToExpr val)
-                        let px = asPixel $ NFEval.reduceNF' IntMap.empty e --XXX
-                        return px
+                        return $ Interact.svFromNFValue $ NFEval.reduceNF' IntMap.empty e -- XXX
                       m = envExpr env
                       f s pt = liftM fst $ Interact.interact send m (m IntMap.! galaxyKey) s pt
                   s <- foldM f Interact.SNil history
@@ -254,8 +253,7 @@ run = do
       let send val = do
             -- FIXME
             e <- Send.sendExpr (Interact.svToExpr val)
-            let px = asPixel $ NFEval.reduceNF' IntMap.empty e --XXX
-            return px
+            return $ Interact.svFromNFValue $ NFEval.reduceNF' IntMap.empty e --XXX
           st = stateState state
           pt = fromJust (statePoint state)
       m <- asks envExpr

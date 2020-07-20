@@ -16,14 +16,11 @@ module Interact
   ) where
 
 import Prelude hiding (interact)
-import qualified Data.IntMap.Lazy as IntMap
 import Data.IntMap.Lazy (IntMap)
 
 import NFEval (NFValue (..), reduceNF')
-import qualified NFEval as NF
 import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
 import qualified ImageFile as IMG
-import GalaxyTxt (getGalaxyExprs, galaxyKey)
 
 
 type Image = IMG.Image
@@ -69,19 +66,25 @@ svFromNFValue v = error $ "svFromNFValue: " ++ show v
 
 type State = SValue
 
-interact :: Monad m => (SValue -> m (Int, Int)) -> IntMap Expr -> Expr -> State -> (Int, Int) -> m (State, [Image])
-interact send env protocol state vector =
-  case step env protocol state vector of
+interact :: Monad m => (SValue -> m SValue) -> IntMap Expr -> Expr -> State -> (Int, Int) -> m (State, [Image])
+interact send env protocol state (x,y) = interact' send env protocol state (SCons (SNum x) (SNum y))
+
+interact' :: Monad m => (SValue -> m SValue) -> IntMap Expr -> Expr -> State -> SValue -> m (State, [Image])
+interact' send env protocol state event =
+  case step' env protocol state event of
     (flag, newState, dat) ->
       if flag == 0 then
         return (newState, svAsImages dat)
       else do
-        vector' <- send dat
-        interact send env protocol newState vector'
+        ret <- send dat
+        interact' send env protocol newState ret
 
 step :: IntMap Expr -> Expr -> State -> (Int, Int) -> (Int, State, SValue)
-step env protocol state (x,y) =
-  case svAsList $ svFromNFValue $ reduceNF' env (Ap (Ap protocol (svToExpr state)) (Ap (Ap (Prim Cons) (Prim (Num x))) (Prim (Num y)))) of
+step env protocol state (x,y) = step' env protocol state (SCons (SNum x) (SNum y))
+
+step' :: IntMap Expr -> Expr -> State -> SValue -> (Int, State, SValue)
+step' env protocol state event =
+  case svAsList $ svFromNFValue $ reduceNF' env (Ap (Ap protocol (svToExpr state)) (svToExpr event)) of
     [flag_, newState, dat] ->
       let flag = svAsNum flag_
        in seq flag $ (flag, newState, dat)

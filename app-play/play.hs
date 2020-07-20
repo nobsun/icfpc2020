@@ -56,11 +56,11 @@ main = do
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
 
-  let send :: SValue -> IO (Int, Int)
+  let send :: SValue -> IO SValue
       send val = do
         -- FIXME: use optServerURL and optApiKey
         e <- sendExpr $ svToExpr val
-        let px = asPixel $ reduceNF' IntMap.empty e -- XXX
+        let px = svFromNFValue $ NFEval.reduceNF' IntMap.empty e --XXX
         -- hPutStrLn stderr $ "send( " ++ show val ++ ") => " ++ show px
         return px
 
