@@ -12,8 +12,8 @@ module Interact
 import Prelude hiding (interact)
 import Data.IntMap.Lazy (IntMap)
 
-import NFEval (NFValue (..), reduceNF')
-import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
+import NFEval (reduceNF')
+import Message (Expr (Ap))
 import qualified ImageFile as IMG
 import SValue
 
