@@ -60,6 +60,7 @@ library:
   - CurlCmd
   - Game
   - GameRun
+  - SValue
   other-modules:
   - MonadicParser
   - ListDesugar

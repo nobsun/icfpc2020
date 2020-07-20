@@ -10,8 +10,6 @@ import Text.Read
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import ImageFile (saveImages)
 import Interact
-import Message
-import NFEval
 import Send
 
 
@@ -56,26 +54,13 @@ main = do
   let env = IntMap.fromList ps
       galaxy = env IntMap.! galaxyKey
 
-  let send :: SValue -> IO SValue
-      send val = do
-        -- FIXME: use optServerURL and optApiKey
-        e <- sendExpr $ svToExpr val
-        let px = svFromNFValue $ NFEval.reduceNF' IntMap.empty e --XXX
-        -- hPutStrLn stderr $ "send( " ++ show val ++ ") => " ++ show px
-        return px
-
   stepRef <- newIORef (1::Int)
   let loop s = do
         n <- readIORef stepRef
         writeIORef stepRef $! n+1
         -- hPutStrLn stderr $ "state = " ++ show s
         pt <- readPixel
-        (s', images) <- Interact.interact send env galaxy s pt
+        (s', images) <- Interact.interact sendSValue env galaxy s pt
         saveImages ("step" ++ show n) images
         loop s'
   loop SNil
-
-
-asPixel :: NFValue -> (Int, Int)
-asPixel (NFPAp Cons [x, NFPAp Cons [y], NFPAp Nil []]) = (asNum x, asNum y)
-asPixel x = error $ "asPixel: " ++ show x
