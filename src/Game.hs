@@ -183,7 +183,7 @@ decodeShipAndCommand sce = do
 
 data GameState =
   GameState
-  { gstateTick  :: Expr
+  { gstateTick  :: Int
   , gstateX1    :: Expr
   , gstateShips :: [ShipInfo]
   } deriving Show
@@ -194,7 +194,7 @@ decodeGameState x = do
   es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
 
   (gtick, x1, ships) <- case es of
-    gtick : x1 : scsExpr : _ -> do
+    (Prim (Num gtick)) : x1 : scsExpr : _ -> do
       sces <- maybe (raise $ "failed to convert ships-and-commands to list: " ++ show x) return $ toList scsExpr
       ss <- mapM decodeShipAndCommand sces
       return (gtick, x1, ss)
