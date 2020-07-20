@@ -1,5 +1,4 @@
 module Send (
-  sendNF,
   sendExpr,
   send_,
   ) where
@@ -10,10 +9,6 @@ import System.Process (readProcess)
 
 import Message (Prim (Cons, Nil, Num), Expr (Ap, Prim))
 import Modulate (modulate_, demodulate)
-import NFEval (NFValue, asExpr)
-
-sendNF :: NFValue -> IO Expr
-sendNF = sendExpr . asExpr
 
 sendExpr :: Expr -> IO Expr
 sendExpr e = do
