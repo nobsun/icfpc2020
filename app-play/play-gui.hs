@@ -2,14 +2,13 @@ module Main (main) where
 
 --------------------------------------------------------------------------------
 
-import Control.Concurrent.STM    (TQueue, atomically, newTQueueIO, tryReadTQueue, readTQueue, writeTQueue)
+import Control.Concurrent.STM    (TQueue, atomically, newTQueueIO, tryReadTQueue, writeTQueue)
 import Control.Exception
 import Control.Monad             (foldM, liftM, unless, when, void)
 import Control.Monad.RWS.Strict  (RWST, ask, asks, evalRWST, get, liftIO, modify, put)
-import Data.Maybe                (isJust, fromJust)
+import Data.Maybe                (catMaybes, isJust, fromJust)
 import Data.IntMap.Lazy (IntMap)
 import qualified Data.IntMap.Lazy          as IntMap
-import Data.Maybe                (catMaybes)
 import Options.Applicative
 import System.IO
 
