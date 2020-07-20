@@ -281,13 +281,10 @@ run = do
       else
         return ()
 
-    win <- asks envWindow
-    liftIO $ do
-        GLFW.swapBuffers win
-        GL.flush  -- not necessary, but someone recommended it
-        GLFW.pollEvents
+    liftIO $ GLFW.waitEvents
     processEvents
 
+    win <- asks envWindow
     q <- liftIO $ GLFW.windowShouldClose win
     if q then do
       state <- get
@@ -409,6 +406,7 @@ draw = do
           GL.renderPrimitive GL.Quads $ mapM_ GL.vertex $ concatMap box pic
       else
         return ()
+    liftIO $ GLFW.swapBuffers (envWindow env)
 
 box :: (Int,Int) -> [GL.Vertex2 GL.GLdouble]
 box (x,y) =
