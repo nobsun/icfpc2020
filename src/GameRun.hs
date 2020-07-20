@@ -5,7 +5,7 @@ module GameRun (
 import Game
   (RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
    Command (Shoot, Accelerate), encodeCommand,
-   StageTag (..), GameState (..), ShipInfo (..), ShipRole, oppositeRole, )
+   StageTag (..), StaticInfo (..), GameState (..), ShipInfo (..), oppositeRole, )
 import CurlCmd (gameSend)
 import Message (Expr, num, nil, fromList, toList)
 import Modulate (modulate, demodulate)
@@ -28,17 +28,18 @@ run server playerKeyStr = do
       nullLoop request_
     Right (Finished, _, _)                  ->
       return ()
-    Right (_stage, myRole, gstate)  ->
-      commandLoop request_ myRole gstate
+    Right (_stage, static, gstate)  ->
+      commandLoop request_ static gstate
 
 
 commandLoop :: (RequestTag -> Expr -> IO Expr)
-            -> ShipRole
-            -> GameState -- ^ game-state at start
+            -> StaticInfo  -- ^ static informations in one game
+            -> GameState   -- ^ game-state at start
             -> IO ()
-commandLoop request_ myRole igstate =
+commandLoop request_ staticInfo igstate =
     loop (0 :: Int) igstate
   where
+    myRole = staticPlayerRole staticInfo
     enemyRole = oppositeRole myRole
     loop n gstate = do
       let putLn = putStrLn . ((show n ++ ": ") ++)

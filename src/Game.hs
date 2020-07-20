@@ -6,6 +6,7 @@ module Game (
 
   ResponseTag (..),
   StageTag (..),
+  StaticInfo (..),
   ShipRole (..), oppositeRole,
   ShipInfo (..),
   GameState (..),
@@ -108,14 +109,23 @@ oppositeRole =
     opp Attacker = Defender
     opp Defender = Attacker
 
-decodeStaticInfo :: Expr -> Either String (Expr, ShipRole, Expr, Expr, Expr)
+data StaticInfo =
+  StaticInfo
+  { staticX0 :: Expr
+  , staticPlayerRole :: ShipRole
+  , staticX2 :: Expr
+  , staticX3 :: Expr
+  , staticX4 :: Expr
+  } deriving Show
+
+decodeStaticInfo :: Expr -> Either String StaticInfo
 decodeStaticInfo x = do
   let raise = Left . ("decodeStaticInfo: " ++)
   es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
   case es of
     x0 : Prim (Num rc) : x2 : x3 : x4 : _ -> do
       role <- maybe (raise $ "unknown player-role code: " ++ show rc) return $ decodeShipRole rc
-      return (x0, role, x2, x3, x4)
+      return $ StaticInfo { staticX0 = x0, staticPlayerRole = role, staticX2 = x2, staticX3 = x3, staticX4 = x4 }
     _                                     ->
       raise $ "unknown static-info expression: " ++ show es
 
@@ -178,7 +188,7 @@ decodeGameState x = do
 
   return GameState { gstateTick = gtick, gstateX1 = x1, gstateShips = ships }
 
-type Response  = (StageTag, ShipRole, GameState)
+type Response  = (StageTag, StaticInfo, GameState)
 
 decodeResponse_ :: Expr -> Either String (ResponseTag, Maybe Response)
 decodeResponse_ x = do
@@ -193,10 +203,10 @@ decodeResponse_ x = do
             WRONG_REQUEST                            -> return Nothing
             GAME_STAGE    -> case rexprs of
               Prim (Num stc) : static : state : _ -> do
-                gstage <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeStageTag stc
-                (_x0, role, _x2, _x3, _x4) <- decodeStaticInfo static
+                gstage  <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeStageTag stc
+                stinfo  <- decodeStaticInfo static
                 gstate  <- decodeGameState state
-                return $ Just (gstage, role, gstate)
+                return $ Just (gstage, stinfo, gstate)
               _                                   ->
                 raise $ "unknown gameStage response: " ++ show rexprs
 
