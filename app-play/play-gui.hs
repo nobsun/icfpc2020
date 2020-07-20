@@ -31,6 +31,7 @@ data Env = Env
     { envEventsChan    :: TQueue Event
     , envWindow        :: !GLFW.Window
     , envExpr          :: IntMap Expr
+    , envOptions       :: Options
     }
 
 data State = State
@@ -75,11 +76,12 @@ data Options
   = Options
   { optState :: Maybe Interact.State
   , optHistory :: Maybe [(Int, Int)]
+  , optDumpEvents :: Bool
   }
   deriving (Show)
 
 optionsParser :: Parser Options
-optionsParser = Options <$> state <*> history
+optionsParser = Options <$> state <*> history <*> dumpEvents
   where
     state :: Parser (Maybe Interact.State)
     state = optional $ option auto $ mconcat
@@ -95,6 +97,12 @@ optionsParser = Options <$> state <*> history
       [ long "history"
       , metavar "STR"
       , help "history (type: [(Int,Int)])"
+      ]
+
+    dumpEvents :: Parser Bool
+    dumpEvents = switch $ mconcat
+      [ long "dump-events"
+      , help "dump OpenGL events"
       ]
 
 parserInfo :: ParserInfo Options
@@ -138,6 +146,7 @@ main = do
               { envEventsChan    = eventsChan
               , envWindow        = win
               , envExpr          = IntMap.fromList ps
+              , envOptions       = opt
               }
             state_ = State
               { stateWindowWidth     = winWidth
@@ -163,9 +172,8 @@ main = do
                   -- FIXME: run のものと共有する
                   let send val = do
                         -- FIXME
-                        e <- Send.sendNF val
-                        let px = asPixel $ NFEval.reduceNF' IntMap.empty e --XXX
-                        return px
+                        e <- Send.sendExpr (Interact.svToExpr val)
+                        return $ Interact.svFromNFValue $ NFEval.reduceNF' IntMap.empty e -- XXX
                       m = envExpr env
                       f s pt = liftM fst $ Interact.interact send m (m IntMap.! galaxyKey) s pt
                   s <- foldM f Interact.SNil history
@@ -173,7 +181,7 @@ main = do
                     state_
                     { statePoint           = Nothing
                     , stateState           = s
-                    , stateHistory         = history
+                    , stateHistory         = reverse history
                     }
                 Nothing -> return state_
                   
@@ -253,9 +261,8 @@ run = do
       then do
       let send val = do
             -- FIXME
-            e <- Send.sendNF val
-            let px = asPixel $ NFEval.reduceNF' IntMap.empty e --XXX
-            return px
+            e <- Send.sendExpr (Interact.svToExpr val)
+            return $ Interact.svFromNFValue $ NFEval.reduceNF' IntMap.empty e --XXX
           st = stateState state
           pt = fromJust (statePoint state)
       m <- asks envExpr
@@ -267,11 +274,12 @@ run = do
             hPutStrLn stderr $ "click: " ++ show pt
             throwIO ex
       (st', images) <- liftIO $ handle h $ Interact.interact send m (m IntMap.! galaxyKey) st pt
+      liftIO $ hPutStrLn stderr $ "state " ++ (if st' == st then "unchanged" else "changed")
       modify $ \s -> s
         { statePicture = images
         , stateState   = st'
         , statePoint   = Nothing
-        , stateHistory = pt : stateHistory s
+        , stateHistory = if st' == st then stateHistory s else pt : stateHistory s
         }
       draw
       else
@@ -293,7 +301,7 @@ run = do
       run
 
 asPixel :: NFEval.NFValue -> (Int,Int)
-asPixel (NFEval.NFPAp Cons [x,y]) = (NFEval.asNum x, NFEval.asNum y)
+asPixel (NFEval.NFPAp Cons [x, NFEval.NFPAp Cons [y, NFEval.NFPAp Nil []]]) = (NFEval.asNum x, NFEval.asNum y)
 asPixel x = error $ "asPixel: " ++ show x
 
 processEvents :: Demo ()
@@ -421,8 +429,10 @@ box (x,y) =
 --------------------------------------------------------------------------------
 
 printEvent :: String -> [String] -> Demo ()
-printEvent cbname fields =
-    liftIO $ putStrLn $ cbname ++ ": " ++ unwords fields
+printEvent cbname fields = do
+    env <- ask
+    when (optDumpEvents $ envOptions $ env) $ do
+      liftIO $ putStrLn $ cbname ++ ": " ++ unwords fields
 
 showModifierKeys :: GLFW.ModifierKeys -> String
 showModifierKeys mk =

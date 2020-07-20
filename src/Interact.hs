@@ -1,91 +1,95 @@
 module Interact
-  ( State (..)
-  , stateToExpr
+  ( SValue (..)
+  , svAsNum
+  , svAsList
+  , svAsPixel
+  , svAsImage
+  , svAsImages
+  , svToExpr
+  , svFromNFValue
 
+  , State
   , Image
-  , asImage
-  , asImages
 
   , interact
   , step
-
-  , _test_step
+  , stepOld
   ) where
 
 import Prelude hiding (interact)
-import qualified Data.IntMap.Lazy as IntMap
 import Data.IntMap.Lazy (IntMap)
 
 import NFEval (NFValue (..), reduceNF')
-import qualified NFEval as NF
 import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
 import qualified ImageFile as IMG
-import GalaxyTxt (getGalaxyExprs, galaxyKey)
 
 
 type Image = IMG.Image
 {-# DEPRECATED Image "use Image in ImageFile.hs instead of this." #-}
 
-data State
-  = SNum Int
+
+data SValue
+  = SNum !Int
   | SNil
-  | SCons State State
+  | SCons !State !State
   deriving (Eq, Show, Read)
 
-stateToExpr :: State -> Expr
-stateToExpr SNil = Prim Nil
-stateToExpr (SCons a b) = Ap (Ap (Prim Cons) (stateToExpr a)) (stateToExpr b)
-stateToExpr (SNum n) = Prim (Num n)
+svAsNum :: SValue -> Int
+svAsNum (SNum n) = n
+svAsNum x = error $ "svAsNum: " ++ show x
+
+svAsList :: SValue -> [SValue]
+svAsList SNil = []
+svAsList (SCons x y) = x : svAsList y
+svAsList v = error $ "svAsList: " ++ show v
+
+svAsPixel :: SValue -> (Int, Int)
+svAsPixel (SCons x y) = (svAsNum x, svAsNum y)
+svAsPixel x = error $ "svAsPixel: " ++ show x
+
+svAsImage :: SValue -> Image
+svAsImage = map svAsPixel . svAsList
+
+svAsImages :: SValue -> [Image]
+svAsImages = map svAsImage . svAsList
+
+svToExpr :: State -> Expr
+svToExpr SNil = Prim Nil
+svToExpr (SCons a b) = Ap (Ap (Prim Cons) (svToExpr a)) (svToExpr b)
+svToExpr (SNum n) = Prim (Num n)
+
+svFromNFValue :: NFValue -> State
+svFromNFValue (NFPAp Nil []) = SNil
+svFromNFValue (NFPAp Cons [x, y]) = SCons (svFromNFValue x) (svFromNFValue y)
+svFromNFValue (NFPAp (Num n) []) = SNum n
+svFromNFValue v = error $ "svFromNFValue: " ++ show v
 
 
-asImage :: NFValue -> Image
-asImage = map asPixel . asList
+type State = SValue
 
-asPixel :: NFValue -> (Int, Int)
-asPixel (NFPAp Cons [x, y]) = (asNum x, asNum y)
-asPixel x = error $ "asPixel: " ++ show x
+interact :: Monad m => (SValue -> m SValue) -> IntMap Expr -> Expr -> State -> (Int, Int) -> m (State, [Image])
+interact send env protocol state (x,y) = interact' send env protocol state (SCons (SNum x) (SNum y))
 
-asImages :: NFValue -> [Image]
-asImages = map asImage . asList
-
-
--- TODO: send の引数も　NFValue ではなく [Image] にしてしまうことは可能?
-interact :: Monad m => (NFValue -> m (Int, Int)) -> IntMap Expr -> Expr -> State -> (Int, Int) -> m (State, [Image])
-interact send env protocol state vector =
-  case step env protocol state vector of
+interact' :: Monad m => (SValue -> m SValue) -> IntMap Expr -> Expr -> State -> SValue -> m (State, [Image])
+interact' send env protocol state event =
+  case step env protocol state event of
     (flag, newState, dat) ->
       if flag == 0 then
-        return (newState, asImages dat)
+        return (newState, svAsImages dat)
       else do
-        vector' <- send dat
-        interact send env protocol newState vector'
+        ret <- send dat
+        interact' send env protocol newState ret
 
-step :: IntMap Expr -> Expr -> State -> (Int, Int) -> (Int, State, NFValue)
-step env protocol state (x,y) =
-  case asList (reduceNF' env (Ap (Ap protocol (stateToExpr state)) (Ap (Ap (Prim Cons) (Prim (Num x))) (Prim (Num y))))) of
-    [flag_, newState_, dat] ->
-      let flag = asNum flag_
-          newState = asState newState_
-       in (flag, newState, dat)
+step :: IntMap Expr -> Expr -> State -> SValue -> (Int, State, SValue)
+step env protocol state event =
+  case svAsList $ svFromNFValue $ reduceNF' env (Ap (Ap protocol (svToExpr state)) (svToExpr event)) of
+    [flag_, newState, dat] ->
+      let flag = svAsNum flag_
+       in seq flag $ (flag, newState, dat)
     xs -> error $ "step: " ++ show xs
 
-
-asList :: NFValue -> [NFValue]
-asList = NF.asList
-
-asNum :: NFValue -> Int
-asNum = NF.asNum
-
-asState :: NFValue -> State
-asState (NFPAp Nil []) = SNil
-asState (NFPAp Cons [x, y]) = SCons (asState x) (asState y)
-asState (NFPAp (Num n) []) = SNum n
-asState v = error $ "asState: " ++ show v
-
-_test_step :: IO ()
-_test_step = do
-  ps <- getGalaxyExprs
-  let env = IntMap.fromList ps
-      galaxy = env IntMap.! galaxyKey
-  let ret = step env galaxy SNil (0,0)
-  print ret
+{-# DEPRECATED stepOld "use new step function" #-}
+stepOld :: IntMap Expr -> Expr -> State -> (Int, Int) -> (Int, State, SValue)
+stepOld env protocol state (x,y) = step env protocol state (SCons (SNum x) (SNum y))
+-- 最初の座標は cons pair で与えるが、 send の返り値はリストで帰ってきて、それをそのままprotocolに引き渡す必要があるので、
+-- このインターフェースは問題があった。

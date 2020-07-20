@@ -5,7 +5,7 @@ module GameRun (
 import Game
   (RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
    Command (Shoot, Accelerate), encodeCommand,
-   GameStage (..), ShipInfo, ShipRole, oppositeRole, )
+   GameStage (..), ShipInfo (..), ShipRole, oppositeRole, )
 import CurlCmd (gameSend)
 import Message (Expr, num, nil, fromList, toList)
 import Modulate (modulate, demodulate)
@@ -23,16 +23,18 @@ run server playerKeyStr = do
   listPrint "START response: " startR
 
   case decodeResponse startR of
-    Left e     ->  do
+    Left e                                  ->  do
       putStrLn $ "somethind wrong: " ++ e
       nullLoop request_
+    Right (Finished, _, _)                  ->
+      return ()
     Right (_stage, myRole, (_tick, ships))  ->
       commandLoop request_ myRole ships
 
 
 commandLoop :: (RequestTag -> Expr -> IO Expr)
             -> ShipRole
-            -> [(ShipInfo, [Expr])]
+            -> [ShipInfo]
             -> IO ()
 commandLoop request_ myRole iships =
     loop (0 :: Int) iships
@@ -40,33 +42,37 @@ commandLoop request_ myRole iships =
     enemyRole = oppositeRole myRole
     loop n ships = do
       let putLn = putStrLn . ((show n ++ ": ") ++)
-          myShips =
-            [ (shipId, pos, vel)
-            | ((role, shipId, pos, vel), _) <- ships
-            , role == myRole ]
-          enemis =
-            [ (pos, vel)
-            | ((role, _, pos, vel), _) <- ships
-            , role == enemyRole ]
+          myShips    = [ ship | ship <- ships, shipRole ship == myRole ]
+          enemyShips = [ ship | ship <- ships, shipRole ship == enemyRole ]
 
-          firstTarget = take 1 enemis
+          firstTarget = take 1 enemyShips
 
           _shootCommands =
-            [ Shoot shipId (epos <+> evel) nil
-            | (shipId, _, _) <- myShips
-            , (epos, evel) <- firstTarget ]
+            [ Shoot (shipId ship) (shipPos enemy <+> shipVel enemy) nil
+            | ship <- myShips
+            , enemy <- firstTarget ]
 
+          -- Accelerate 命令の仕様で、加速度ベクトルは逆向きに与える.
+          -- 敵の集団に近づく加速度
+          _closerAcc pos vel =
+            foldr (<+>) (0,0)
+            [ vsignum (npos <-> (shipPos enemy <+> shipVel enemy))
+            | enemy <- enemyShips
+            , let npos = pos <+> vel
+                  _npos = pos <+> vel `vquot` 2]
+
+          -- Accelerate 命令の仕様で、加速度ベクトルは逆向きに与える.
           -- 敵の集団から遠ざかる加速度
           furtherAcc pos vel =
             foldr (<+>) (0,0)
-            [ vsignum (npos <-> (ePos <+> eVel))
-            | (ePos, eVel) <- enemis
+            [ vsignum ((shipPos enemy <+> shipVel enemy) <-> npos)
+            | enemy <- enemyShips
             , let npos = pos <+> vel
                   _npos = pos <+> vel `vquot` 2]
 
           commands =
-            [ Accelerate shipId (furtherAcc pos vel)
-            | (shipId, pos, vel) <- myShips ]
+            [ Accelerate (shipId ship) (furtherAcc (shipPos ship) (shipVel ship))
+            | ship <- myShips ]
 
       putLn $ "my-role: " ++ show myRole
       putLn $ "enemy-role: " ++ show enemyRole

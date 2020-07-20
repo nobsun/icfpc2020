@@ -7,7 +7,7 @@ module Game (
   ResponseTag (..),
   GameStage (..),
   ShipRole (..), oppositeRole,
-  ShipInfo,
+  ShipInfo (..),
   GameState,
   Response,
   decodeResponse,
@@ -119,9 +119,17 @@ decodeStaticInfo x = do
     _                                     ->
       raise $ "unknown static-info expression: " ++ show es
 
-type ShipInfo = (ShipRole, Int, (Int, Int), (Int, Int))
+data ShipInfo =
+  ShipInfo
+  { shipRole :: ShipRole
+  , shipId   :: Int
+  , shipPos  :: (Int, Int)
+  , shipVel  :: (Int, Int)
+  , shipMisc :: (Expr, Expr, Expr, Expr)
+  , shipAppCmds :: [Expr]
+  } deriving Show
 
-decodeShipAndCommand :: Expr -> Either String ((ShipInfo, (Expr, Expr, Expr, Expr)), [Expr])
+decodeShipAndCommand :: Expr -> Either String ShipInfo
 decodeShipAndCommand sce = do
   let raise = Left . ("decodeShipAndCommand: " ++)
   sc <- maybe (raise $ "failed to convert to list: " ++ show sce) return $ toList sce
@@ -130,21 +138,26 @@ decodeShipAndCommand sce = do
     _         ->  raise $ "unknown ship-and-commands expression: " ++ show sc
 
   ship <- maybe (raise $ "failed to convert ship to list: " ++ show shipe) return $ toList shipe
-  (role, shipId, pos, vel, other) <- case ship of
-    (Prim (Num rc) : Prim (Num shipId) :
+  (role, sid, pos, vel, other) <- case ship of
+    (Prim (Num rc) : Prim (Num sid) :
      Ap (Ap (Prim Cons) (Prim (Num px))) (Prim (Num py)) :
      Ap (Ap (Prim Cons) (Prim (Num vx))) (Prim (Num vy)) :
      x4 : x5 : x6 : x7 : _) -> do
       role <- maybe (raise $ "unknown player-role code: " ++ show rc) return $ decodeShipRole rc
-      return (role, shipId, (px, py), (vx, vy), (x4, x5, x6, x7))
+      return (role, sid, (px, py), (vx, vy), (x4, x5, x6, x7))
     _                       ->
       raise $ "unknown ship expression: " ++ show ship
 
   cmds <- maybe (raise $ "failed to convert commands to list: " ++ show cmdse) return $ toList cmdse
-  return (((role, shipId, pos, vel), other), cmds)
+  let si = ShipInfo
+           { shipRole = role, shipId = sid
+           , shipPos = pos, shipVel = vel
+           , shipMisc = other, shipAppCmds = cmds
+           }
+  return si
 
 
-decodeGameState :: Expr -> Either String ((Expr, Expr), [(ShipInfo, [Expr])])
+decodeGameState :: Expr -> Either String ((Expr, Expr), [ShipInfo])
 decodeGameState x = do
   let raise = Left . ("decodeGameState: " ++)
   es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
@@ -152,16 +165,14 @@ decodeGameState x = do
   (gtick, x1, scps) <- case es of
     gtick : x1 : scsExpr : _ -> do
       sces <- maybe (raise $ "failed to convert ships-and-commands to list: " ++ show x) return $ toList scsExpr
-      scs <- mapM decodeShipAndCommand sces
-      let ps = [ (ship, cmds)
-               | ((ship, _x4567), cmds) <- scs]
-      return (gtick, x1, ps)
+      ss <- mapM decodeShipAndCommand sces
+      return (gtick, x1, ss)
     _                            ->
       raise $ "unknown game-state expression: " ++ show es
 
   return ((gtick, x1), scps)
 
-type GameState = (Expr, [(ShipInfo, [Expr])])
+type GameState = (Expr, [ShipInfo])
 
 type Response  = (GameStage, ShipRole, GameState)
 
