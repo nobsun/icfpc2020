@@ -58,7 +58,7 @@ reduceNF' env = ev
       case fun of
         NFPAp prim xs ->
           if arity prim <= length xs then
-            error "should not happen"
+            error $ "should not happen: prim " ++ show prim
           else if arity prim == length xs + 1 then
             redPrim prim (xs ++ [arg])
           else
