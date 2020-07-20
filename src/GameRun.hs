@@ -5,7 +5,7 @@ module GameRun (
 import Game
   (RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
    Command (Shoot, Accelerate), encodeCommand,
-   GameStage (..), ShipInfo (..), ShipRole, oppositeRole, )
+   GameStage (..), GameState (..), ShipInfo (..), ShipRole, oppositeRole, )
 import CurlCmd (gameSend)
 import Message (Expr, num, nil, fromList, toList)
 import Modulate (modulate, demodulate)
@@ -28,20 +28,21 @@ run server playerKeyStr = do
       nullLoop request_
     Right (Finished, _, _)                  ->
       return ()
-    Right (_stage, myRole, (_tick, ships))  ->
-      commandLoop request_ myRole ships
+    Right (_stage, myRole, gstate)  ->
+      commandLoop request_ myRole gstate
 
 
 commandLoop :: (RequestTag -> Expr -> IO Expr)
             -> ShipRole
-            -> [ShipInfo]
+            -> GameState -- ^ game-state at start
             -> IO ()
-commandLoop request_ myRole iships =
-    loop (0 :: Int) iships
+commandLoop request_ myRole igstate =
+    loop (0 :: Int) igstate
   where
     enemyRole = oppositeRole myRole
-    loop n ships = do
+    loop n gstate = do
       let putLn = putStrLn . ((show n ++ ": ") ++)
+          ships = gstateShips gstate
           myShips    = [ ship | ship <- ships, shipRole ship == myRole ]
           enemyShips = [ ship | ship <- ships, shipRole ship == enemyRole ]
 
@@ -83,17 +84,17 @@ commandLoop request_ myRole iships =
       let recover em = do
             putStrLn $ "response decode error: " ++ em
             putStrLn "recovering using previous state..."
-            return (AlreadyStarted, ships)
+            return (AlreadyStarted, gstate)
           response (_tag, mayResp) =
             maybe
             (recover "wrong request error.")
-            (\ (stage, _, (_tick, ships1)) -> return (stage, ships1))
+            (\ (stage, _, gstate1) -> return (stage, gstate1))
             mayResp
-      res@(stage, ships1) <- either recover response $ decodeResponse_ cmdR
+      res@(stage, gstate1) <- either recover response $ decodeResponse_ cmdR
       putLn $ "response: " ++ show res
       case stage of
-        NotYetStarted   -> loop (n+1) ships1
-        AlreadyStarted  -> loop (n+1) ships1
+        NotYetStarted   -> loop (n+1) gstate1
+        AlreadyStarted  -> loop (n+1) gstate1
         Finished        -> return ()
 
     (x, y) `vquot` n = (x `quot` n, y `quot` n)

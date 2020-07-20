@@ -8,7 +8,7 @@ module Game (
   GameStage (..),
   ShipRole (..), oppositeRole,
   ShipInfo (..),
-  GameState,
+  GameState (..),
   Response,
   decodeResponse,
   decodeResponse_,
@@ -156,13 +156,19 @@ decodeShipAndCommand sce = do
            }
   return si
 
+data GameState =
+  GameState
+  { gstateTick  :: Expr
+  , gstateX1    :: Expr
+  , gstateShips :: [ShipInfo]
+  } deriving Show
 
-decodeGameState :: Expr -> Either String ((Expr, Expr), [ShipInfo])
+decodeGameState :: Expr -> Either String GameState
 decodeGameState x = do
   let raise = Left . ("decodeGameState: " ++)
   es     <- maybe (raise $ "failed to convert to list: " ++ show x) return $ toList x
 
-  (gtick, x1, scps) <- case es of
+  (gtick, x1, ships) <- case es of
     gtick : x1 : scsExpr : _ -> do
       sces <- maybe (raise $ "failed to convert ships-and-commands to list: " ++ show x) return $ toList scsExpr
       ss <- mapM decodeShipAndCommand sces
@@ -170,9 +176,7 @@ decodeGameState x = do
     _                            ->
       raise $ "unknown game-state expression: " ++ show es
 
-  return ((gtick, x1), scps)
-
-type GameState = (Expr, [ShipInfo])
+  return GameState { gstateTick = gtick, gstateX1 = x1, gstateShips = ships }
 
 type Response  = (GameStage, ShipRole, GameState)
 
@@ -189,10 +193,10 @@ decodeResponse_ x = do
             WRONG_REQUEST                            -> return Nothing
             GAME_STAGE    -> case rexprs of
               Prim (Num stc) : static : state : _ -> do
-                gst <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeGameStage stc
+                gstage <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeGameStage stc
                 (_x0, role, _x2, _x3, _x4) <- decodeStaticInfo static
-                ((gtick, _x1), shipAndCmds) <- decodeGameState state
-                return $ Just (gst, role, (gtick, shipAndCmds))
+                gstate  <- decodeGameState state
+                return $ Just (gstage, role, gstate)
               _                                   ->
                 raise $ "unknown gameStage response: " ++ show rexprs
 
