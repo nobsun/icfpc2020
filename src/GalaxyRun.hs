@@ -21,7 +21,7 @@ import Send (sendExpr)
 import NFEval (NFValue (..), asNum, asList, reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import ImageFile (Image)
-import Interact (SValue (SNil), State, svAsImages, svToExpr, step, )
+import Interact (SValue (SNil), State, svAsImages, svToExpr, stepOld )
 
 
 getGalaxyProtocol :: IO (IntMap Expr, Expr)
@@ -54,7 +54,7 @@ interacts :: (SValue -> IO (Int, Int))
           -> State -> (Int, Int) -> IO [(State, [Image])]
 interacts send env protocol istate ivector = do
   let loop state vector = unsafeInterleaveIO $ do
-        case step env protocol state vector of
+        case stepOld env protocol state vector of
           (flag, newState, dat)
             | flag == 0  ->
                 return [(newState, svAsImages dat)]
@@ -72,7 +72,7 @@ manualInteracts env protocol istate ivectors =
     loop state (v:vs) =
         ((newState, svAsImages dat), flag /= 0) : loop newState vs
       where
-        (flag, newState, dat) = step env protocol state v
+        (flag, newState, dat) = stepOld env protocol state v
 
 rangedInteracts :: (SValue -> IO (Int, Int))
                 -> IntMap Expr -> Expr
