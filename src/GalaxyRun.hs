@@ -16,7 +16,7 @@ import Data.IntMap (IntMap, fromList)
 import qualified Data.IntMap as IM
 import System.IO.Unsafe (unsafeInterleaveIO)
 
-import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
+import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num), toList)
 import Send (sendExpr)
 import NFEval (NFValue (..), asNum, asList, reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
@@ -88,9 +88,9 @@ rangedInteracts send env protocol ((minx, miny), (maxx, maxy)) =
 sendGetPX :: SValue -> IO (Int, Int)
 sendGetPX sv = do
   e <- sendExpr $ Interact.svToExpr sv
-  case e of
-    Ap (Ap (Prim Cons) (Prim (Num n1))) (Prim (Num n2))  ->  return (n1, n2)
-    _                                                    ->  fail $ "send result is not num-pair: " ++ show e
+  case toList e of
+    Just [Prim (Num n1), Prim (Num n2)] ->  return (n1, n2)
+    _                                   ->  fail $ "sendGetPX: pixel result is not 2-num list: " ++ show e
 
 galaxyInteracts :: ((Int, Int), (Int, Int))
                 -> IO [((Int, Int), [(State, [Image])])]
