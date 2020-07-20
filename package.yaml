@@ -140,6 +140,7 @@ executables:
           - OpenGL
           - base
           - mtl
+          - optparse-applicative
           - pretty
           - stm
           - transformers

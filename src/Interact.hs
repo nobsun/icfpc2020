@@ -30,7 +30,7 @@ data State
   = SNum Int
   | SNil
   | SCons State State
-  deriving (Eq, Show)
+  deriving (Eq, Show, Read)
 
 stateToExpr :: State -> Expr
 stateToExpr SNil = Prim Nil

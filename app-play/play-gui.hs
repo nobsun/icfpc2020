@@ -4,7 +4,7 @@ module Main (main) where
 
 import Control.Concurrent.STM    (TQueue, atomically, newTQueueIO, tryReadTQueue, readTQueue, writeTQueue)
 import Control.Exception
-import Control.Monad             (unless, when, void)
+import Control.Monad             (foldM, liftM, unless, when, void)
 import Control.Monad.RWS.Strict  (RWST, ask, asks, evalRWST, get, liftIO, modify, put)
 import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import Data.List                 (intercalate)
@@ -12,6 +12,7 @@ import Data.Maybe                (isJust, fromJust)
 import Data.IntMap.Lazy (IntMap (..))
 import qualified Data.IntMap.Lazy          as IntMap
 import Data.Maybe                (catMaybes)
+import Options.Applicative
 import System.IO
 import Text.PrettyPrint   hiding ((<>))
 
@@ -70,8 +71,41 @@ data Event =
 
 --------------------------------------------------------------------------------
 
+data Options
+  = Options
+  { optState :: Maybe Interact.State
+  , optHistory :: Maybe [(Int, Int)]
+  }
+  deriving (Show)
+
+optionsParser :: Parser Options
+optionsParser = Options <$> state <*> history
+  where
+    state :: Parser (Maybe Interact.State)
+    state = optional $ option auto $ mconcat
+      [ long "state"
+      , metavar "STR"
+      , help "state (type: Interact.State)"
+      -- , value Interact.SNil
+      -- , showDefault
+      ]
+
+    history :: Parser (Maybe [(Int, Int)])
+    history = optional $ option auto $ mconcat
+      [ long "history"
+      , metavar "STR"
+      , help "history (type: [(Int,Int)])"
+      ]
+
+parserInfo :: ParserInfo Options
+parserInfo = info (helper <*> optionsParser) $ fullDesc
+
 main :: IO ()
 main = do
+    opt <- execParser parserInfo
+    when (isJust (optState opt) && isJust (optHistory opt)) $ do
+      error "you can specify only one of --state and --history"
+
     let width  = 640
         height = 480
 
@@ -105,7 +139,7 @@ main = do
               , envWindow        = win
               , envExpr          = IntMap.fromList ps
               }
-            state = State
+            state_ = State
               { stateWindowWidth     = winWidth
               , stateWindowHeight    = winHeight
               , stateFBWidth         = fbWidth
@@ -115,6 +149,34 @@ main = do
               , stateState           = Interact.SNil
               , stateHistory         = []
               }
+        state <-
+          case optState opt of
+            Just s ->
+              return $
+                state_
+                { statePoint           = Nothing
+                , stateState           = s
+                }
+            Nothing ->
+              case optHistory opt of
+                Just history -> do
+                  -- FIXME: run のものと共有する
+                  let send val = do
+                        -- FIXME
+                        e <- Send.sendNF val
+                        let px = asPixel $ NFEval.reduceNF' IntMap.empty e --XXX
+                        return px
+                      m = envExpr env
+                      f s pt = liftM fst $ Interact.interact send m (m IntMap.! galaxyKey) s pt
+                  s <- foldM f Interact.SNil history
+                  return $ 
+                    state_
+                    { statePoint           = Nothing
+                    , stateState           = s
+                    , stateHistory         = history
+                    }
+                Nothing -> return state_
+                  
         runDemo env state
 
     putStrLn "ended!"
