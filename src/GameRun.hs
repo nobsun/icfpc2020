@@ -4,7 +4,7 @@ module GameRun (
 
 import Game
   (RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
-   Command (Shoot), encodeCommand,
+   Command (Shoot, Accelerate), encodeCommand,
    GameStage (..), ShipInfo, ShipRole, oppositeRole, )
 import CurlCmd (gameSend)
 import Message (Expr, num, nil, fromList, toList)
@@ -41,19 +41,32 @@ commandLoop request_ myRole iships =
     loop n ships = do
       let putLn = putStrLn . ((show n ++ ": ") ++)
           myShips =
-            [ shipId
-            | ((role, shipId, _, _), _) <- ships
+            [ (shipId, pos, vel)
+            | ((role, shipId, pos, vel), _) <- ships
             , role == myRole ]
-          enemyTargets =
-            [ pos <+> vel <//> 4
+          enemis =
+            [ (pos, vel)
             | ((role, _, pos, vel), _) <- ships
             , role == enemyRole ]
-          firstTarget = take 1 enemyTargets
+
+          firstTarget = take 1 enemis
+
+          _shootCommands =
+            [ Shoot shipId (epos <+> evel) nil
+            | (shipId, _, _) <- myShips
+            , (epos, evel) <- firstTarget ]
+
+          -- 敵の集団から遠ざかる加速度
+          furtherAcc pos vel =
+            foldr (<+>) (0,0)
+            [ vsignum (npos <-> (ePos <+> eVel))
+            | (ePos, eVel) <- enemis
+            , let npos = pos <+> vel
+                  _npos = pos <+> vel `vquot` 2]
 
           commands =
-            [ Shoot shipId target nil
-            | shipId <- myShips
-            , target <- firstTarget ]
+            [ Accelerate shipId (furtherAcc pos vel)
+            | (shipId, pos, vel) <- myShips ]
 
       putLn $ "my-role: " ++ show myRole
       putLn $ "enemy-role: " ++ show enemyRole
@@ -77,10 +90,19 @@ commandLoop request_ myRole iships =
         AlreadyStarted  -> loop (n+1) ships1
         Finished        -> return ()
 
-    (x, y) <//> n = (x `quot` n, y `quot` n)
-    (px, py) <+> (vx, vy) = (px + vx, py + vy)
-    infixl 6 <+>
-    infixl 7 <//>
+    (x, y) `vquot` n = (x `quot` n, y `quot` n)
+
+    vneg (x, y) = (-x, -y)
+    vsignum (x, y) = (signum x, signum y)
+
+    (x1, y1) <+> (x2, y2) = (x1 + x2, y1 + y2)
+
+    p <-> q = p <+> vneg q
+
+    infixl 6 <+>, <->
+    infixl 7 `vquot`
+
+
 
 nullLoop :: (RequestTag -> Expr -> IO Expr) -> IO ()
 nullLoop request_ =
