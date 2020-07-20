@@ -53,6 +53,7 @@ commandLoop request_ commander istage staticInfo igstate =
       putLn $ "my-role: " ++ show myRole
       putLn $ "enemy-role: " ++ show enemyRole
       putLn $ "my-ships: " ++ show myShips
+      putLn $ "game-tick: " ++ show (gstateTick gstate)
       mapM_ (putLn . ("command: " ++) . show) commands
       cmdR    <- request_ COMMANDS $ fromList $ map encodeCommand $ commands
       listPrint "COMMANDS response: " cmdR
