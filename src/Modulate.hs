@@ -1,10 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Modulate
-  ( modulate
-  , modulate_
-  , demodulate
-  , demodulate_
+  ( modulateSV, modulate, modulate_
+  , demodulate, demodulate_
   ) where
 
 import Control.Applicative
@@ -19,8 +17,32 @@ import qualified Data.ByteString.Lazy.Char8 as L8 hiding (take, takeWhile)
 
 import Numeric (showIntAtBase, readInt)
 
+import SValue (SValue (..), svFromExpr_)
 import Message (Expr (..), Prim (..))
 
+
+-- | XXX
+-- >>> modulateSV (SNum 0)
+-- "010"
+--
+-- >>> modulateSV SNil
+-- "00"
+--
+-- >>> modulateSV (SCons SNil SNil)
+-- "110000"
+--
+-- >>> modulateSV (SNum 1)
+-- "01100001"
+--
+-- >>> modulateSV (SNum (-1))
+-- "10100001"
+--
+-- >>> modulateSV (SCons (SNum 1) (SCons (SNum 2) SNil))
+-- "1101100001110110001000"
+modulateSV :: SValue -> String
+modulateSV (SNum n)      = modulateNum n
+modulateSV  SNil         = "00"
+modulateSV (SCons v1 v2) = "11" ++ modulateSV v1 ++ modulateSV v2
 
 -- | XXX
 -- >>> modulate (Prim (Num 0))
@@ -46,11 +68,7 @@ modulate e =
   modulate_ e
 
 modulate_ :: Expr -> Either String String
-modulate_ (Prim (Num n))     = Right $ modulateNum n
-modulate_ (Prim Nil)         = Right "00"
-modulate_ (Ap(Prim  Cons) e) = (++) "11" <$> modulate_ e
-modulate_ (Ap e1 e2)         = (++) <$> modulate_ e1 <*> modulate_ e2
-modulate_  e                 = Left $ "modulate: unknown expr to modulate!: " ++ show e
+modulate_ = fmap modulateSV . svFromExpr_
 
 
 modulateNum :: Int -> String
