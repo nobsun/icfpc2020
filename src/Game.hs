@@ -14,7 +14,7 @@ module Game (
   decodeResponse_,
   ) where
 
-import Message (Expr (Ap, Prim), Prim (Num, Cons), fromList, toList, cons, num)
+import Message (Expr (Ap, Prim), Prim (Num, Cons), num, cons, fromList, toList)
 
 data RequestTag
   = CREATE
@@ -34,11 +34,11 @@ requestCode =
 
 create :: Expr
 create =
-  fromList [ Prim $ Num $ requestCode CREATE ]
+  fromList [ num $ requestCode CREATE ]
 
 encodeRequest :: Int -> RequestTag -> Expr -> Expr
 encodeRequest playerKey rtag dataExpr =
-  fromList [ Prim $ Num $ requestCode rtag, Prim $ Num playerKey, dataExpr ]
+  fromList [ num $ requestCode rtag, num playerKey, dataExpr ]
 
 
 data Command
