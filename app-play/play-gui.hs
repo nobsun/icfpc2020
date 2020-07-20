@@ -20,7 +20,6 @@ import Message (Expr (..))
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import qualified Interact
 import qualified Send
-import qualified NFEval
 
 --------------------------------------------------------- -----------------------
 
@@ -165,13 +164,8 @@ main = do
             Nothing ->
               case optHistory opt of
                 Just history -> do
-                  -- FIXME: run のものと共有する
-                  let send val = do
-                        -- FIXME
-                        e <- Send.sendExpr (Interact.svToExpr val)
-                        return $ Interact.svFromNFValue $ NFEval.reduceNF' IntMap.empty e -- XXX
-                      m = envExpr env
-                      f s pt = liftM fst $ Interact.interact send m (m IntMap.! galaxyKey) s pt
+                  let m = envExpr env
+                      f s pt = liftM fst $ Interact.interact Send.sendSValue m (m IntMap.! galaxyKey) s pt
                   s <- foldM f Interact.SNil history
                   return $ 
                     state_
@@ -255,11 +249,7 @@ run = do
     state <- get
     if isJust (statePoint state)
       then do
-      let send val = do
-            -- FIXME
-            e <- Send.sendExpr (Interact.svToExpr val)
-            return $ Interact.svFromNFValue $ NFEval.reduceNF' IntMap.empty e --XXX
-          st = stateState state
+      let st = stateState state
           pt = fromJust (statePoint state)
       m <- asks envExpr
       let h :: SomeException -> IO a
@@ -269,7 +259,7 @@ run = do
             hPutStrLn stderr $ "state: " ++ show st
             hPutStrLn stderr $ "click: " ++ show pt
             throwIO ex
-      (st', images) <- liftIO $ handle h $ Interact.interact send m (m IntMap.! galaxyKey) st pt
+      (st', images) <- liftIO $ handle h $ Interact.interact Send.sendSValue m (m IntMap.! galaxyKey) st pt
       liftIO $ hPutStrLn stderr $ "state " ++ (if st' == st then "unchanged" else "changed")
       modify $ \s -> s
         { statePicture = images
