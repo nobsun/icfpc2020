@@ -20,7 +20,7 @@ breaking _stag    staticInfo gstate = do
       -- 自分の座標位置の signum の逆と 速度の signum の和を与え、
       -- 速度低下させつつ中心から遠ざかることを狙う
       commands =
-        [ Accelerate (shipId ship) ( vsignum $ vneg (vsignum $ shipPos ship) <+> vsignum (shipVel ship) )
+        [ Accelerate (shipId ship) ( vneg (vsignum $ shipPos ship) <+> vsignum (shipVel ship) )
         | ship <- myShips ]
 
   return commands
