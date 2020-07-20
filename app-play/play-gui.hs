@@ -163,7 +163,7 @@ main = do
                   -- FIXME: run のものと共有する
                   let send val = do
                         -- FIXME
-                        e <- Send.sendNF val
+                        e <- Send.sendExpr (Interact.svToExpr val)
                         let px = asPixel $ NFEval.reduceNF' IntMap.empty e --XXX
                         return px
                       m = envExpr env
@@ -253,7 +253,7 @@ run = do
       then do
       let send val = do
             -- FIXME
-            e <- Send.sendNF val
+            e <- Send.sendExpr (Interact.svToExpr val)
             let px = asPixel $ NFEval.reduceNF' IntMap.empty e --XXX
             return px
           st = stateState state

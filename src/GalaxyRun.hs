@@ -17,11 +17,11 @@ import qualified Data.IntMap as IM
 import System.IO.Unsafe (unsafeInterleaveIO)
 
 import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
-import Send (sendNF)
+import Send (sendExpr)
 import NFEval (NFValue (..), asNum, asList, reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import ImageFile (Image)
-import Interact (State (SNil), asImages, step, )
+import Interact (SValue (SNil), State, svAsImages, svToExpr, step, )
 
 
 getGalaxyProtocol :: IO (IntMap Expr, Expr)
@@ -49,7 +49,7 @@ protocol1 = do
   putStrLn $ "dat: " ++ show dat
   putStrLn $ "other: " ++ show xs
 
-interacts :: (NFValue -> IO (Int, Int))
+interacts :: (SValue -> IO (Int, Int))
           -> IntMap Expr -> Expr
           -> State -> (Int, Int) -> IO [(State, [Image])]
 interacts send env protocol istate ivector = do
@@ -57,10 +57,10 @@ interacts send env protocol istate ivector = do
         case step env protocol state vector of
           (flag, newState, dat)
             | flag == 0  ->
-                return [(newState, asImages dat)]
+                return [(newState, svAsImages dat)]
             | otherwise  -> do
                 newVector <- send dat
-                (:) (newState, asImages dat) <$> loop newState newVector
+                (:) (newState, svAsImages dat) <$> loop newState newVector
   loop istate ivector
 
 manualInteracts :: IntMap Expr -> Expr
@@ -70,11 +70,11 @@ manualInteracts env protocol istate ivectors =
   where
     loop _      []    = []
     loop state (v:vs) =
-        ((newState, asImages dat), flag /= 0) : loop newState vs
+        ((newState, svAsImages dat), flag /= 0) : loop newState vs
       where
         (flag, newState, dat) = step env protocol state v
 
-rangedInteracts :: (NFValue -> IO (Int, Int))
+rangedInteracts :: (SValue -> IO (Int, Int))
                 -> IntMap Expr -> Expr
                 -> ((Int, Int), (Int, Int))
                 -> IO [((Int, Int), [(State, [Image])])]
@@ -85,9 +85,9 @@ rangedInteracts send env protocol ((minx, miny), (maxx, maxy)) =
            , y <- [miny .. maxy]
            ]
 
-sendGetPX :: NFValue -> IO (Int, Int)
-sendGetPX nf = do
-  e <- sendNF nf
+sendGetPX :: SValue -> IO (Int, Int)
+sendGetPX sv = do
+  e <- sendExpr $ Interact.svToExpr sv
   case e of
     Ap (Ap (Prim Cons) (Prim (Num n1))) (Prim (Num n2))  ->  return (n1, n2)
     _                                                    ->  fail $ "send result is not num-pair: " ++ show e
