@@ -6,24 +6,20 @@ import Control.Concurrent.STM    (TQueue, atomically, newTQueueIO, tryReadTQueue
 import Control.Exception
 import Control.Monad             (foldM, liftM, unless, when, void)
 import Control.Monad.RWS.Strict  (RWST, ask, asks, evalRWST, get, liftIO, modify, put)
-import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
-import Data.List                 (intercalate)
 import Data.Maybe                (isJust, fromJust)
-import Data.IntMap.Lazy (IntMap (..))
+import Data.IntMap.Lazy (IntMap)
 import qualified Data.IntMap.Lazy          as IntMap
 import Data.Maybe                (catMaybes)
 import Options.Applicative
 import System.IO
-import Text.PrettyPrint   hiding ((<>))
 
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW          as GLFW
 
-import Message (Expr (..), Prim (..))
+import Message (Expr (..))
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import qualified Interact
 import qualified Send
-import qualified NFEval
 
 --------------------------------------------------------- -----------------------
 
@@ -49,7 +45,7 @@ type Demo = RWST Env () State IO
 
 sizeX, sizeY :: Int
 sizeX = 180
-sizeY = 130
+sizeY = 180
 
 --------------------------------------------------------------------------------
 
@@ -118,9 +114,8 @@ main = do
         height = 480
 
     eventsChan <- newTQueueIO :: IO (TQueue Event)
-    clickChan <- newTQueueIO :: IO (TQueue (Int,Int))
 
-    withWindow width height "GLFW-b-demo" $ \win -> do
+    withWindow width height "ICFPc 2020" $ \win -> do
         GLFW.setErrorCallback               $ Just $ errorCallback           eventsChan
         GLFW.setWindowPosCallback       win $ Just $ windowPosCallback       eventsChan
         GLFW.setWindowSizeCallback      win $ Just $ windowSizeCallback      eventsChan
@@ -169,13 +164,8 @@ main = do
             Nothing ->
               case optHistory opt of
                 Just history -> do
-                  -- FIXME: run のものと共有する
-                  let send val = do
-                        -- FIXME
-                        e <- Send.sendExpr (Interact.svToExpr val)
-                        return $ Interact.svFromNFValue $ NFEval.reduceNF' IntMap.empty e -- XXX
-                      m = envExpr env
-                      f s pt = liftM fst $ Interact.interact send m (m IntMap.! galaxyKey) s pt
+                  let m = envExpr env
+                      f s pt = liftM fst $ Interact.interact Send.sendSValue m (m IntMap.! galaxyKey) s pt
                   s <- foldM f Interact.SNil history
                   return $ 
                     state_
@@ -259,11 +249,7 @@ run = do
     state <- get
     if isJust (statePoint state)
       then do
-      let send val = do
-            -- FIXME
-            e <- Send.sendExpr (Interact.svToExpr val)
-            return $ Interact.svFromNFValue $ NFEval.reduceNF' IntMap.empty e --XXX
-          st = stateState state
+      let st = stateState state
           pt = fromJust (statePoint state)
       m <- asks envExpr
       let h :: SomeException -> IO a
@@ -273,7 +259,7 @@ run = do
             hPutStrLn stderr $ "state: " ++ show st
             hPutStrLn stderr $ "click: " ++ show pt
             throwIO ex
-      (st', images) <- liftIO $ handle h $ Interact.interact send m (m IntMap.! galaxyKey) st pt
+      (st', images) <- liftIO $ handle h $ Interact.interact Send.sendSValue m (m IntMap.! galaxyKey) st pt
       liftIO $ hPutStrLn stderr $ "state " ++ (if st' == st then "unchanged" else "changed")
       modify $ \s -> s
         { statePicture = images
@@ -285,13 +271,10 @@ run = do
       else
         return ()
 
-    win <- asks envWindow
-    liftIO $ do
-        GLFW.swapBuffers win
-        GL.flush  -- not necessary, but someone recommended it
-        GLFW.pollEvents
+    liftIO $ GLFW.waitEvents
     processEvents
 
+    win <- asks envWindow
     q <- liftIO $ GLFW.windowShouldClose win
     if q then do
       state <- get
@@ -299,10 +282,6 @@ run = do
       liftIO $ hPutStrLn stderr $ "state: " ++ show (stateState state)
     else do
       run
-
-asPixel :: NFEval.NFValue -> (Int,Int)
-asPixel (NFEval.NFPAp Cons [x, NFEval.NFPAp Cons [y, NFEval.NFPAp Nil []]]) = (NFEval.asNum x, NFEval.asNum y)
-asPixel x = error $ "asPixel: " ++ show x
 
 processEvents :: Demo ()
 processEvents = do
@@ -375,6 +354,8 @@ processEvent ev =
               x' = ((round x-(width`div`2))*2*sizeX)`div`width
               y' = ((round y-(height`div`2))*2*sizeY)`div`height
           printEvent "cursor pos" [show x', show y']
+          win <- asks envWindow
+          liftIO $ GLFW.setWindowTitle win $ "ICFPc 2020: cursor = " ++ show (x', y')
 
       (EventCursorEnter _ cs) -> do
           printEvent "cursor enter" [show cs]
@@ -384,7 +365,7 @@ processEvent ev =
               y' = round y :: Int
           printEvent "scroll" [show x', show y']
 
-      (EventKey win k scancode ks mk) -> do
+      (EventKey _win k scancode ks mk) -> do
           printEvent "key" [show k, show scancode, show ks, showModifierKeys mk]
 
       (EventChar _ c) ->
@@ -412,11 +393,12 @@ draw = do
     if pics /= []
       then liftIO $ do
         GL.clear [GL.ColorBuffer, GL.DepthBuffer]
-        flip mapM_ (zip [1, 0.7, 0.5, 0.25, 0.10, 0.10, 0.10] pics) $ \(i,pic) -> do
+        flip mapM_ (reverse (zip [1, 0.7, 0.5, 0.25, 0.10, 0.10, 0.10] pics)) $ \(i,pic) -> do
           GL.color (GL.Color3 i i i :: GL.Color3 GL.GLfloat)
           GL.renderPrimitive GL.Quads $ mapM_ GL.vertex $ concatMap box pic
       else
         return ()
+    liftIO $ GLFW.swapBuffers (envWindow env)
 
 box :: (Int,Int) -> [GL.Vertex2 GL.GLdouble]
 box (x,y) =

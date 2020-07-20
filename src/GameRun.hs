@@ -3,15 +3,15 @@ module GameRun (
   ) where
 
 import Game
-  (RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
-   Command (Shoot, Accelerate), encodeCommand,
-   GameStage (..), ShipInfo (..), ShipRole, oppositeRole, )
+  (Commander, encodeCommand,
+   RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
+   StageTag (..), StaticInfo (..), GameState (..), ShipInfo (..), oppositeRole, )
 import CurlCmd (gameSend)
 import Message (Expr, num, nil, fromList, toList)
 import Modulate (modulate, demodulate)
 
-run :: String -> String -> IO ()
-run server playerKeyStr = do
+run :: Commander -> String -> String -> IO ()
+run commander server playerKeyStr = do
   playerKey <- readIO playerKeyStr
   putStrLn $ "playerKey: " ++ show playerKey
   let request_ = request server playerKey
@@ -28,86 +28,50 @@ run server playerKeyStr = do
       nullLoop request_
     Right (Finished, _, _)                  ->
       return ()
-    Right (_stage, myRole, (_tick, ships))  ->
-      commandLoop request_ myRole ships
+    Right (stage, static, gstate)  ->
+      commandLoop request_ commander stage static gstate
 
 
 commandLoop :: (RequestTag -> Expr -> IO Expr)
-            -> ShipRole
-            -> [ShipInfo]
+            -> Commander
+            -> StageTag
+            -> StaticInfo  -- ^ static informations in one game
+            -> GameState   -- ^ game-state at start
             -> IO ()
-commandLoop request_ myRole iships =
-    loop (0 :: Int) iships
+commandLoop request_ commander istage staticInfo igstate =
+    loop (0 :: Int) istage igstate
   where
+    myRole = staticPlayerRole staticInfo
     enemyRole = oppositeRole myRole
-    loop n ships = do
+    loop n stage gstate = do
       let putLn = putStrLn . ((show n ++ ": ") ++)
+          ships = gstateShips gstate
           myShips    = [ ship | ship <- ships, shipRole ship == myRole ]
-          enemyShips = [ ship | ship <- ships, shipRole ship == enemyRole ]
 
-          firstTarget = take 1 enemyShips
-
-          _shootCommands =
-            [ Shoot (shipId ship) (shipPos enemy <+> shipVel enemy) nil
-            | ship <- myShips
-            , enemy <- firstTarget ]
-
-          -- Accelerate 命令の仕様で、加速度ベクトルは逆向きに与える.
-          -- 敵の集団に近づく加速度
-          _closerAcc pos vel =
-            foldr (<+>) (0,0)
-            [ vsignum (npos <-> (shipPos enemy <+> shipVel enemy))
-            | enemy <- enemyShips
-            , let npos = pos <+> vel
-                  _npos = pos <+> vel `vquot` 2]
-
-          -- Accelerate 命令の仕様で、加速度ベクトルは逆向きに与える.
-          -- 敵の集団から遠ざかる加速度
-          furtherAcc pos vel =
-            foldr (<+>) (0,0)
-            [ vsignum ((shipPos enemy <+> shipVel enemy) <-> npos)
-            | enemy <- enemyShips
-            , let npos = pos <+> vel
-                  _npos = pos <+> vel `vquot` 2]
-
-          commands =
-            [ Accelerate (shipId ship) (furtherAcc (shipPos ship) (shipVel ship))
-            | ship <- myShips ]
+      commands <- commander stage staticInfo igstate
 
       putLn $ "my-role: " ++ show myRole
       putLn $ "enemy-role: " ++ show enemyRole
       putLn $ "my-ships: " ++ show myShips
+      putLn $ "game-tick: " ++ show (gstateTick gstate)
       mapM_ (putLn . ("command: " ++) . show) commands
       cmdR    <- request_ COMMANDS $ fromList $ map encodeCommand $ commands
       listPrint "COMMANDS response: " cmdR
       let recover em = do
             putStrLn $ "response decode error: " ++ em
             putStrLn "recovering using previous state..."
-            return (AlreadyStarted, ships)
+            return (AlreadyStarted, gstate)
           response (_tag, mayResp) =
             maybe
             (recover "wrong request error.")
-            (\ (stage, _, (_tick, ships1)) -> return (stage, ships1))
+            (\ (stage1, _, gstate1) -> return (stage1, gstate1))
             mayResp
-      res@(stage, ships1) <- either recover response $ decodeResponse_ cmdR
+      res@(stage1, gstate1) <- either recover response $ decodeResponse_ cmdR
       putLn $ "response: " ++ show res
       case stage of
-        NotYetStarted   -> loop (n+1) ships1
-        AlreadyStarted  -> loop (n+1) ships1
+        NotYetStarted   -> loop (n+1) stage1 gstate1
+        AlreadyStarted  -> loop (n+1) stage1 gstate1
         Finished        -> return ()
-
-    (x, y) `vquot` n = (x `quot` n, y `quot` n)
-
-    vneg (x, y) = (-x, -y)
-    vsignum (x, y) = (signum x, signum y)
-
-    (x1, y1) <+> (x2, y2) = (x1 + x2, y1 + y2)
-
-    p <-> q = p <+> vneg q
-
-    infixl 6 <+>, <->
-    infixl 7 `vquot`
-
 
 
 nullLoop :: (RequestTag -> Expr -> IO Expr) -> IO ()

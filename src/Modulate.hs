@@ -1,10 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Modulate
-  ( modulate
-  , modulate_
-  , demodulate
-  , demodulate_
+  ( modulateSV, modulate, modulate_
+  , demodulateSV, demodulate, demodulate_
   ) where
 
 import Control.Applicative
@@ -19,10 +17,35 @@ import qualified Data.ByteString.Lazy.Char8 as L8 hiding (take, takeWhile)
 
 import Numeric (showIntAtBase, readInt)
 
-import Message (Expr (..), Prim (..))
+import SValue (SValue (..), svFromExpr_, svToExpr)
+import Message (Expr (..))
 
 
 -- | XXX
+-- >>> modulateSV (SNum 0)
+-- "010"
+--
+-- >>> modulateSV SNil
+-- "00"
+--
+-- >>> modulateSV (SCons SNil SNil)
+-- "110000"
+--
+-- >>> modulateSV (SNum 1)
+-- "01100001"
+--
+-- >>> modulateSV (SNum (-1))
+-- "10100001"
+--
+-- >>> modulateSV (SCons (SNum 1) (SCons (SNum 2) SNil))
+-- "1101100001110110001000"
+modulateSV :: SValue -> String
+modulateSV (SNum n)      = modulateNum n
+modulateSV  SNil         = "00"
+modulateSV (SCons v1 v2) = "11" ++ modulateSV v1 ++ modulateSV v2
+
+-- | XXX
+-- >>> import Message
 -- >>> modulate (Prim (Num 0))
 -- "010"
 --
@@ -46,11 +69,7 @@ modulate e =
   modulate_ e
 
 modulate_ :: Expr -> Either String String
-modulate_ (Prim (Num n))     = Right $ modulateNum n
-modulate_ (Prim Nil)         = Right "00"
-modulate_ (Ap(Prim  Cons) e) = (++) "11" <$> modulate_ e
-modulate_ (Ap e1 e2)         = (++) <$> modulate_ e1 <*> modulate_ e2
-modulate_  e                 = Left $ "modulate: unknown expr to modulate!: " ++ show e
+modulate_ = fmap modulateSV . svFromExpr_
 
 
 modulateNum :: Int -> String
@@ -71,6 +90,7 @@ toInt _   = 1
 
 
 -- | XXX
+-- >>> import Message
 -- >>> demodulate "00"
 -- Right (Prim Nil)
 --
@@ -90,24 +110,26 @@ demodulate :: String -> Either String Expr
 demodulate = demodulate_ . L8.pack
 
 demodulate_ :: L8.ByteString -> Either String Expr
-demodulate_ = eitherResult . parse demodP
+demodulate_ = fmap svToExpr . demodulateSV
 
+demodulateSV :: L8.ByteString -> Either String SValue
+demodulateSV = eitherResult . parse demodP
 
-demodP :: Parser Expr
+demodP :: Parser SValue
 demodP = A8.choice
-  [ A8.string "00" *> pure (Prim Nil)
-  , A8.string "11" *> (Ap <$> Ap (Prim Cons) <$> demodP <*> demodP)
+  [ A8.string "00" *> pure SNil
+  , A8.string "11" *> (SCons <$> demodP <*> demodP)
   , demodNumP
   ]
 
-demodNumP :: Parser Expr
+demodNumP :: Parser SValue
 demodNumP = do
   sig <- (A8.string "01" *> pure 1) <|> (A8.string "10" *> pure (-1))
   len <- (4*) . B.length <$> A8.takeWhile (=='1')
   _ <- A8.char '0'
   if len == 0
-    then pure (Prim (Num 0))
+    then pure (SNum 0)
     else do
     bstr <- B.unpack <$> A8.take len
-    maybe (fail "readInt 2 failed.") (return . Prim . Num . (*sig))
+    maybe (fail "readInt 2 failed.") (return . SNum . (*sig))
       $ listToMaybe [ i | (i, "") <- readInt 2 (`elem`("01"::String)) toInt bstr ]

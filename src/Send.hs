@@ -1,24 +1,28 @@
 module Send (
-  sendNF,
   sendExpr,
-  send_,
+  sendString,
+  sendSValue
   ) where
 
 import Data.ByteString.Lazy.UTF8 as BLU
+import qualified Data.IntMap.Lazy as IntMap
 import Network.HTTP.Simple
 import System.Process (readProcess)
 
 import Message (Prim (Cons, Nil, Num), Expr (Ap, Prim))
 import Modulate (modulate_, demodulate)
-import NFEval (NFValue, asExpr)
+import qualified NFEval
+import SValue
 
-sendNF :: NFValue -> IO Expr
-sendNF = sendExpr . asExpr
+sendSValue :: SValue -> IO SValue
+sendSValue val = do
+  e <- sendExpr $ svToExpr val
+  return $! svFromNFValue $ NFEval.reduceNF' IntMap.empty e -- XXX
 
 sendExpr :: Expr -> IO Expr
 sendExpr e = do
   me <- either (fail . ("runSend: request: modulate: " ++)) return $ modulate_ e
-  rbody <- send_ me
+  rbody <- sendString me
   either (fail . ("runSend: response: demodulate: " ++)) return $ demodulate rbody
 
 _exampleSend0 :: IO Expr
@@ -28,8 +32,8 @@ _exampleSend0 =
 useCurl :: Bool
 useCurl = False
 
-send_ :: String -> IO String
-send_ me = do
+sendString :: String -> IO String
+sendString me = do
   putStrLn $ "send: req: " ++ me
   let url = "https://icfpc2020-api.testkontur.ru/aliens/send?apiKey=a52c864b55954e25adc32abf69bc22b9"
 

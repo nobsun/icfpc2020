@@ -60,11 +60,14 @@ library:
   - CurlCmd
   - Game
   - GameRun
+  - SValue
+  - Commander.Further
   other-modules:
   - MonadicParser
   - ListDesugar
   - Draw
-  - Eval
+  - Vec
+  # - Eval
   source-dirs: src
 
 executables:
@@ -145,7 +148,7 @@ executables:
           - stm
           - transformers
         else:
-          buildable: false 
+          buildable: false
       - condition: flag(static)
         then:
           ghc-options: -static

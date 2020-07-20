@@ -1,12 +1,5 @@
 module Interact
-  ( SValue (..)
-  , svAsNum
-  , svAsList
-  , svAsPixel
-  , svAsImage
-  , svAsImages
-  , svToExpr
-  , svFromNFValue
+  ( module SValue
 
   , State
   , Image
@@ -19,50 +12,14 @@ module Interact
 import Prelude hiding (interact)
 import Data.IntMap.Lazy (IntMap)
 
-import NFEval (NFValue (..), reduceNF')
-import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
+import NFEval (reduceNF')
+import Message (Expr (Ap))
 import qualified ImageFile as IMG
+import SValue
 
 
 type Image = IMG.Image
 {-# DEPRECATED Image "use Image in ImageFile.hs instead of this." #-}
-
-
-data SValue
-  = SNum !Int
-  | SNil
-  | SCons !State !State
-  deriving (Eq, Show, Read)
-
-svAsNum :: SValue -> Int
-svAsNum (SNum n) = n
-svAsNum x = error $ "svAsNum: " ++ show x
-
-svAsList :: SValue -> [SValue]
-svAsList SNil = []
-svAsList (SCons x y) = x : svAsList y
-svAsList v = error $ "svAsList: " ++ show v
-
-svAsPixel :: SValue -> (Int, Int)
-svAsPixel (SCons x y) = (svAsNum x, svAsNum y)
-svAsPixel x = error $ "svAsPixel: " ++ show x
-
-svAsImage :: SValue -> Image
-svAsImage = map svAsPixel . svAsList
-
-svAsImages :: SValue -> [Image]
-svAsImages = map svAsImage . svAsList
-
-svToExpr :: State -> Expr
-svToExpr SNil = Prim Nil
-svToExpr (SCons a b) = Ap (Ap (Prim Cons) (svToExpr a)) (svToExpr b)
-svToExpr (SNum n) = Prim (Num n)
-
-svFromNFValue :: NFValue -> State
-svFromNFValue (NFPAp Nil []) = SNil
-svFromNFValue (NFPAp Cons [x, y]) = SCons (svFromNFValue x) (svFromNFValue y)
-svFromNFValue (NFPAp (Num n) []) = SNum n
-svFromNFValue v = error $ "svFromNFValue: " ++ show v
 
 
 type State = SValue
