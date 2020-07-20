@@ -3,6 +3,7 @@ module Main (main) where
 --------------------------------------------------------------------------------
 
 import Control.Concurrent.STM    (TQueue, atomically, newTQueueIO, tryReadTQueue, readTQueue, writeTQueue)
+import Control.Exception
 import Control.Monad             (unless, when, void)
 import Control.Monad.RWS.Strict  (RWST, ask, asks, evalRWST, get, liftIO, modify, put)
 import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
@@ -11,6 +12,7 @@ import Data.Maybe                (isJust, fromJust)
 import Data.IntMap.Lazy (IntMap (..))
 import qualified Data.IntMap.Lazy          as IntMap
 import Data.Maybe                (catMaybes)
+import System.IO
 import Text.PrettyPrint   hiding ((<>))
 
 import qualified Graphics.Rendering.OpenGL as GL
@@ -38,6 +40,7 @@ data State = State
     , statePicture         :: [Interact.Image]
     , statePoint           :: Maybe (Int,Int)
     , stateState           :: Interact.State
+    , stateHistory         :: [(Int, Int)]
     }
 
 type Demo = RWST Env () State IO
@@ -110,6 +113,7 @@ main = do
               , statePicture         = []
               , statePoint           = Just (0,0)
               , stateState           = Interact.SNil
+              , stateHistory         = []
               }
         runDemo env state
 
@@ -193,11 +197,19 @@ run = do
           st = stateState state
           pt = fromJust (statePoint state)
       m <- asks envExpr
-      (st', images) <- liftIO $ Interact.interact send m (m IntMap.! galaxyKey) st pt
+      let h :: SomeException -> IO a
+          h ex = do
+            hPutStrLn stderr $ show ex
+            hPutStrLn stderr $ "history: " ++ show (reverse (stateHistory state))
+            hPutStrLn stderr $ "state: " ++ show st
+            hPutStrLn stderr $ "click: " ++ show pt
+            throwIO ex
+      (st', images) <- liftIO $ handle h $ Interact.interact send m (m IntMap.! galaxyKey) st pt
       modify $ \s -> s
         { statePicture = images
         , stateState   = st'
         , statePoint   = Nothing
+        , stateHistory = pt : stateHistory s
         }
       draw
       else
@@ -211,7 +223,12 @@ run = do
     processEvents
 
     q <- liftIO $ GLFW.windowShouldClose win
-    unless q run
+    if q then do
+      state <- get
+      liftIO $ hPutStrLn stderr $ "history: " ++ show (reverse (stateHistory state))
+      liftIO $ hPutStrLn stderr $ "state: " ++ show (stateState state)
+    else do
+      run
 
 asPixel :: NFEval.NFValue -> (Int,Int)
 asPixel (NFEval.NFPAp Cons [x,y]) = (NFEval.asNum x, NFEval.asNum y)
