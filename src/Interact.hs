@@ -81,26 +81,8 @@ interact send env protocol state vector =
 
 step :: IntMap Expr -> Expr -> State -> (Int, Int) -> (Int, State, SValue)
 step env protocol state (x,y) =
-  case asList (reduceNF' env (Ap (Ap protocol (svToExpr state)) (Ap (Ap (Prim Cons) (Prim (Num x))) (Prim (Num y))))) of
-    [flag_, newState_, dat_] ->
-      let flag = asNum flag_
-          newState = svFromNFValue newState_
-          dat = svFromNFValue dat_
-       in seq step $ seq newState $ seq dat $ (flag, newState, dat)
+  case svAsList $ svFromNFValue $ reduceNF' env (Ap (Ap protocol (svToExpr state)) (Ap (Ap (Prim Cons) (Prim (Num x))) (Prim (Num y)))) of
+    [flag_, newState, dat] ->
+      let flag = svAsNum flag_
+       in seq flag $ (flag, newState, dat)
     xs -> error $ "step: " ++ show xs
-
-
-asList :: NFValue -> [NFValue]
-asList = NF.asList
-
-asNum :: NFValue -> Int
-asNum = NF.asNum
-
-
-_test_step :: IO ()
-_test_step = do
-  ps <- getGalaxyExprs
-  let env = IntMap.fromList ps
-      galaxy = env IntMap.! galaxyKey
-  let ret = step env galaxy SNil (0,0)
-  print ret
