@@ -1,14 +1,23 @@
 module Send (
   sendExpr,
   sendString,
+  sendSValue
   ) where
 
 import Data.ByteString.Lazy.UTF8 as BLU
+import qualified Data.IntMap.Lazy as IntMap
 import Network.HTTP.Simple
 import System.Process (readProcess)
 
 import Message (Prim (Cons, Nil, Num), Expr (Ap, Prim))
 import Modulate (modulate_, demodulate)
+import qualified NFEval
+import SValue
+
+sendSValue :: SValue -> IO SValue
+sendSValue val = do
+  e <- sendExpr $ svToExpr val
+  return $! svFromNFValue $ NFEval.reduceNF' IntMap.empty e -- XXX
 
 sendExpr :: Expr -> IO Expr
 sendExpr e = do
