@@ -16,12 +16,13 @@ import Data.IntMap (IntMap, fromList)
 import qualified Data.IntMap as IM
 import System.IO.Unsafe (unsafeInterleaveIO)
 
-import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num), toList)
-import Send (sendExpr)
+import Message (Expr (Ap, Prim), Prim (Cons, Nil, Num))
+import Send (sendSValue)
+import SValue (SValue (SCons, SNum))
 import NFEval (NFValue (..), asNum, asList, reduceNF')
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import ImageFile (Image)
-import Interact (SValue (SNil), State, svAsImages, svToExpr, stepOld )
+import Interact (SValue (SNil), State, svAsImages, step)
 
 
 getGalaxyProtocol :: IO (IntMap Expr, Expr)
@@ -49,19 +50,19 @@ protocol1 = do
   putStrLn $ "dat: " ++ show dat
   putStrLn $ "other: " ++ show xs
 
-interacts :: (SValue -> IO (Int, Int))
+interacts :: (SValue -> IO SValue)
           -> IntMap Expr -> Expr
           -> State -> (Int, Int) -> IO [(State, [Image])]
-interacts send env protocol istate ivector = do
-  let loop state vector = unsafeInterleaveIO $ do
-        case stepOld env protocol state vector of
+interacts send env protocol istate (ix, iy) = do
+  let loop state sval = unsafeInterleaveIO $ do
+        case step env protocol state sval of
           (flag, newState, dat)
             | flag == 0  ->
                 return [(newState, svAsImages dat)]
             | otherwise  -> do
-                newVector <- send dat
-                (:) (newState, svAsImages dat) <$> loop newState newVector
-  loop istate ivector
+                newSVal <- send dat
+                (:) (newState, svAsImages dat) <$> loop newState newSVal
+  loop istate $ SCons (SNum ix) (SNum iy)
 
 manualInteracts :: IntMap Expr -> Expr
                 -> State -> [(Int, Int)] -> [((State, [Image]), Bool)]
@@ -69,12 +70,12 @@ manualInteracts env protocol istate ivectors =
     loop istate ivectors
   where
     loop _      []    = []
-    loop state (v:vs) =
+    loop state ((vx, vy):vs) =
         ((newState, svAsImages dat), flag /= 0) : loop newState vs
       where
-        (flag, newState, dat) = stepOld env protocol state v
+        (flag, newState, dat) = step env protocol state $ SCons (SNum vx) (SNum vy)
 
-rangedInteracts :: (SValue -> IO (Int, Int))
+rangedInteracts :: (SValue -> IO SValue)
                 -> IntMap Expr -> Expr
                 -> ((Int, Int), (Int, Int))
                 -> IO [((Int, Int), [(State, [Image])])]
@@ -85,18 +86,11 @@ rangedInteracts send env protocol ((minx, miny), (maxx, maxy)) =
            , y <- [miny .. maxy]
            ]
 
-sendGetPX :: SValue -> IO (Int, Int)
-sendGetPX sv = do
-  e <- sendExpr $ Interact.svToExpr sv
-  case toList e of
-    Just [Prim (Num n1), Prim (Num n2)] ->  return (n1, n2)
-    _                                   ->  fail $ "sendGetPX: pixel result is not 2-num list: " ++ show e
-
 galaxyInteracts :: ((Int, Int), (Int, Int))
                 -> IO [((Int, Int), [(State, [Image])])]
 galaxyInteracts range = do
   (env, proto) <- getGalaxyProtocol
-  rangedInteracts sendGetPX env proto range
+  rangedInteracts sendSValue env proto range
 
 _run :: IO ()
 _run = do
