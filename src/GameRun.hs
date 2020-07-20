@@ -5,7 +5,7 @@ module GameRun (
 import Game
   (RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
    Command (Shoot, Accelerate), encodeCommand,
-   GameStage (..), ShipInfo, ShipRole, oppositeRole, )
+   GameStage (..), ShipInfo (..), ShipRole, oppositeRole, )
 import CurlCmd (gameSend)
 import Message (Expr, num, nil, fromList, toList)
 import Modulate (modulate, demodulate)
@@ -32,7 +32,7 @@ run server playerKeyStr = do
 
 commandLoop :: (RequestTag -> Expr -> IO Expr)
             -> ShipRole
-            -> [(ShipInfo, [Expr])]
+            -> [ShipInfo]
             -> IO ()
 commandLoop request_ myRole iships =
     loop (0 :: Int) iships
@@ -40,33 +40,27 @@ commandLoop request_ myRole iships =
     enemyRole = oppositeRole myRole
     loop n ships = do
       let putLn = putStrLn . ((show n ++ ": ") ++)
-          myShips =
-            [ (shipId, pos, vel)
-            | ((role, shipId, pos, vel), _) <- ships
-            , role == myRole ]
-          enemis =
-            [ (pos, vel)
-            | ((role, _, pos, vel), _) <- ships
-            , role == enemyRole ]
+          myShips    = [ ship | ship <- ships, shipRole ship == myRole ]
+          enemyShips = [ ship | ship <- ships, shipRole ship == enemyRole ]
 
-          firstTarget = take 1 enemis
+          firstTarget = take 1 enemyShips
 
           _shootCommands =
-            [ Shoot shipId (epos <+> evel) nil
-            | (shipId, _, _) <- myShips
-            , (epos, evel) <- firstTarget ]
+            [ Shoot (shipId ship) (shipPos enemy <+> shipVel enemy) nil
+            | ship <- myShips
+            , enemy <- firstTarget ]
 
           -- 敵の集団から遠ざかる加速度
           furtherAcc pos vel =
             foldr (<+>) (0,0)
-            [ vsignum (npos <-> (ePos <+> eVel))
-            | (ePos, eVel) <- enemis
+            [ vsignum (npos <-> (shipPos enemy <+> shipVel enemy))
+            | enemy <- enemyShips
             , let npos = pos <+> vel
                   _npos = pos <+> vel `vquot` 2]
 
           commands =
-            [ Accelerate shipId (furtherAcc pos vel)
-            | (shipId, pos, vel) <- myShips ]
+            [ Accelerate (shipId ship) (furtherAcc (shipPos ship) (shipVel ship))
+            | ship <- myShips ]
 
       putLn $ "my-role: " ++ show myRole
       putLn $ "enemy-role: " ++ show enemyRole
