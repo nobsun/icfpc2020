@@ -3,6 +3,7 @@ module Commander.Breaking where
 import Game
   (Commander, StageTag (Finished), GameState (..), ShipInfo (..),
    playerRole, Command (..))
+import Vec (vneg, vsignum, (<+>))
 
 breaking :: Commander
 breaking Finished _          _      =    return []
@@ -15,9 +16,11 @@ breaking _stag    staticInfo gstate = do
       -- enemyShips = [ ship | ship <- ships, shipRole ship == enemyRole ]
 
       -- Accelerate 命令の仕様で、加速度ベクトルは逆向きに与える.
-      -- 速度と同じベクトルを与えて速度を打ち消すことを狙う
+      -- 中心が (0,0) であることを利用して、
+      -- 自分の座標位置の signum の逆と 速度の signum の和を与え、
+      -- 速度低下させつつ中心から遠ざかることを狙う
       commands =
-        [ Accelerate (shipId ship) (shipVel ship)
+        [ Accelerate (shipId ship) ( vsignum $ vneg (vsignum $ shipPos ship) <+> vsignum (shipVel ship) )
         | ship <- myShips ]
 
   return commands
