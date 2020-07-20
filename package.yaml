@@ -61,7 +61,10 @@ library:
   - Game
   - GameRun
   - SValue
+  - Commander.Breaking
   - Commander.Further
+  - Commander.Closer
+  - Commander.Shooter
   other-modules:
   - MonadicParser
   - ListDesugar
