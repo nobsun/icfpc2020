@@ -1,6 +1,6 @@
 module Send (
   sendExpr,
-  send_,
+  sendString,
   ) where
 
 import Data.ByteString.Lazy.UTF8 as BLU
@@ -13,7 +13,7 @@ import Modulate (modulate_, demodulate)
 sendExpr :: Expr -> IO Expr
 sendExpr e = do
   me <- either (fail . ("runSend: request: modulate: " ++)) return $ modulate_ e
-  rbody <- send_ me
+  rbody <- sendString me
   either (fail . ("runSend: response: demodulate: " ++)) return $ demodulate rbody
 
 _exampleSend0 :: IO Expr
@@ -23,8 +23,8 @@ _exampleSend0 =
 useCurl :: Bool
 useCurl = False
 
-send_ :: String -> IO String
-send_ me = do
+sendString :: String -> IO String
+sendString me = do
   putStrLn $ "send: req: " ++ me
   let url = "https://icfpc2020-api.testkontur.ru/aliens/send?apiKey=a52c864b55954e25adc32abf69bc22b9"
 
