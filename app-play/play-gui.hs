@@ -393,7 +393,7 @@ draw = do
     if pics /= []
       then liftIO $ do
         GL.clear [GL.ColorBuffer, GL.DepthBuffer]
-        flip mapM_ (zip [1, 0.7, 0.5, 0.25, 0.10, 0.10, 0.10] pics) $ \(i,pic) -> do
+        flip mapM_ (reverse (zip [1, 0.7, 0.5, 0.25, 0.10, 0.10, 0.10] pics)) $ \(i,pic) -> do
           GL.color (GL.Color3 i i i :: GL.Color3 GL.GLfloat)
           GL.renderPrimitive GL.Quads $ mapM_ GL.vertex $ concatMap box pic
       else
