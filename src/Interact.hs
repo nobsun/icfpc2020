@@ -1,15 +1,18 @@
 module Interact
-  ( State (..)
-  , stateToExpr
+  ( SValue (..)
+  , svAsNum
+  , svAsList
+  , svAsPixel
+  , svAsImage
+  , svAsImages
+  , svToExpr
+  , svFromNFValue
 
+  , State
   , Image
-  , asImage
-  , asImages
 
   , interact
   , step
-
-  , _test_step
   ) where
 
 import Prelude hiding (interact)
@@ -26,47 +29,64 @@ import GalaxyTxt (getGalaxyExprs, galaxyKey)
 type Image = IMG.Image
 {-# DEPRECATED Image "use Image in ImageFile.hs instead of this." #-}
 
-data State
-  = SNum Int
+
+data SValue
+  = SNum !Int
   | SNil
-  | SCons State State
+  | SCons !State !State
   deriving (Eq, Show, Read)
 
-stateToExpr :: State -> Expr
-stateToExpr SNil = Prim Nil
-stateToExpr (SCons a b) = Ap (Ap (Prim Cons) (stateToExpr a)) (stateToExpr b)
-stateToExpr (SNum n) = Prim (Num n)
+svAsNum :: SValue -> Int
+svAsNum (SNum n) = n
+svAsNum x = error $ "svAsNum: " ++ show x
+
+svAsList :: SValue -> [SValue]
+svAsList SNil = []
+svAsList (SCons x y) = x : svAsList y
+svAsList v = error $ "svAsList: " ++ show v
+
+svAsPixel :: SValue -> (Int, Int)
+svAsPixel (SCons x y) = (svAsNum x, svAsNum y)
+svAsPixel x = error $ "svAsPixel: " ++ show x
+
+svAsImage :: SValue -> Image
+svAsImage = map svAsPixel . svAsList
+
+svAsImages :: SValue -> [Image]
+svAsImages = map svAsImage . svAsList
+
+svToExpr :: State -> Expr
+svToExpr SNil = Prim Nil
+svToExpr (SCons a b) = Ap (Ap (Prim Cons) (svToExpr a)) (svToExpr b)
+svToExpr (SNum n) = Prim (Num n)
+
+svFromNFValue :: NFValue -> State
+svFromNFValue (NFPAp Nil []) = SNil
+svFromNFValue (NFPAp Cons [x, y]) = SCons (svFromNFValue x) (svFromNFValue y)
+svFromNFValue (NFPAp (Num n) []) = SNum n
+svFromNFValue v = error $ "svFromNFValue: " ++ show v
 
 
-asImage :: NFValue -> Image
-asImage = map asPixel . asList
+type State = SValue
 
-asPixel :: NFValue -> (Int, Int)
-asPixel (NFPAp Cons [x, y]) = (asNum x, asNum y)
-asPixel x = error $ "asPixel: " ++ show x
-
-asImages :: NFValue -> [Image]
-asImages = map asImage . asList
-
-
--- TODO: send の引数も　NFValue ではなく [Image] にしてしまうことは可能?
-interact :: Monad m => (NFValue -> m (Int, Int)) -> IntMap Expr -> Expr -> State -> (Int, Int) -> m (State, [Image])
+interact :: Monad m => (SValue -> m (Int, Int)) -> IntMap Expr -> Expr -> State -> (Int, Int) -> m (State, [Image])
 interact send env protocol state vector =
   case step env protocol state vector of
     (flag, newState, dat) ->
       if flag == 0 then
-        return (newState, asImages dat)
+        return (newState, svAsImages dat)
       else do
         vector' <- send dat
         interact send env protocol newState vector'
 
-step :: IntMap Expr -> Expr -> State -> (Int, Int) -> (Int, State, NFValue)
+step :: IntMap Expr -> Expr -> State -> (Int, Int) -> (Int, State, SValue)
 step env protocol state (x,y) =
-  case asList (reduceNF' env (Ap (Ap protocol (stateToExpr state)) (Ap (Ap (Prim Cons) (Prim (Num x))) (Prim (Num y))))) of
-    [flag_, newState_, dat] ->
+  case asList (reduceNF' env (Ap (Ap protocol (svToExpr state)) (Ap (Ap (Prim Cons) (Prim (Num x))) (Prim (Num y))))) of
+    [flag_, newState_, dat_] ->
       let flag = asNum flag_
-          newState = asState newState_
-       in (flag, newState, dat)
+          newState = svFromNFValue newState_
+          dat = svFromNFValue dat_
+       in seq step $ seq newState $ seq dat $ (flag, newState, dat)
     xs -> error $ "step: " ++ show xs
 
 
@@ -76,11 +96,6 @@ asList = NF.asList
 asNum :: NFValue -> Int
 asNum = NF.asNum
 
-asState :: NFValue -> State
-asState (NFPAp Nil []) = SNil
-asState (NFPAp Cons [x, y]) = SCons (asState x) (asState y)
-asState (NFPAp (Num n) []) = SNum n
-asState v = error $ "asState: " ++ show v
 
 _test_step :: IO ()
 _test_step = do
