@@ -274,6 +274,7 @@ run = do
             hPutStrLn stderr $ "click: " ++ show pt
             throwIO ex
       (st', images) <- liftIO $ handle h $ Interact.interact send m (m IntMap.! galaxyKey) st pt
+      liftIO $ hPutStrLn stderr $ "state " ++ (if st' == st then "unchanged" else "changed")
       modify $ \s -> s
         { statePicture = images
         , stateState   = st'
