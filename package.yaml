@@ -30,6 +30,11 @@ flags:
     default: false
     manual: true
 
+  gui:
+    description: build playgui which requires OpenGL related libraries
+    default: false
+    manual: true
+
 library:
   dependencies:
   - array
@@ -121,22 +126,27 @@ executables:
     - -rtsopts
     - -threaded
     when:
+      - condition: flag(gui)
+        then:
+          buildable: true
+          dependencies:
+          - icfpc2020
+          - containers
+          - process
+          - curl
+          - GLFW-b
+          - OpenGL
+          - base
+          - mtl
+          - pretty
+          - stm
+          - transformers
+        else:
+          buildable: false 
       - condition: flag(static)
         then:
           ghc-options: -static
         else: {}
-    dependencies:
-    - icfpc2020
-    - containers
-    - process
-    - curl
-    - GLFW-b
-    - OpenGL
-    - base
-    - mtl
-    - pretty
-    - stm
-    - transformers
 
 tests:
   icfpc2020-test:
