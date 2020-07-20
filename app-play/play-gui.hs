@@ -31,6 +31,7 @@ data Env = Env
     { envEventsChan    :: TQueue Event
     , envWindow        :: !GLFW.Window
     , envExpr          :: IntMap Expr
+    , envOptions       :: Options
     }
 
 data State = State
@@ -75,11 +76,12 @@ data Options
   = Options
   { optState :: Maybe Interact.State
   , optHistory :: Maybe [(Int, Int)]
+  , optDumpEvents :: Bool
   }
   deriving (Show)
 
 optionsParser :: Parser Options
-optionsParser = Options <$> state <*> history
+optionsParser = Options <$> state <*> history <*> dumpEvents
   where
     state :: Parser (Maybe Interact.State)
     state = optional $ option auto $ mconcat
@@ -95,6 +97,12 @@ optionsParser = Options <$> state <*> history
       [ long "history"
       , metavar "STR"
       , help "history (type: [(Int,Int)])"
+      ]
+
+    dumpEvents :: Parser Bool
+    dumpEvents = switch $ mconcat
+      [ long "dump-events"
+      , help "dump OpenGL events"
       ]
 
 parserInfo :: ParserInfo Options
@@ -138,6 +146,7 @@ main = do
               { envEventsChan    = eventsChan
               , envWindow        = win
               , envExpr          = IntMap.fromList ps
+              , envOptions       = opt
               }
             state_ = State
               { stateWindowWidth     = winWidth
@@ -419,8 +428,10 @@ box (x,y) =
 --------------------------------------------------------------------------------
 
 printEvent :: String -> [String] -> Demo ()
-printEvent cbname fields =
-    liftIO $ putStrLn $ cbname ++ ": " ++ unwords fields
+printEvent cbname fields = do
+    env <- ask
+    when (optDumpEvents $ envOptions $ env) $ do
+      liftIO $ putStrLn $ cbname ++ ": " ++ unwords fields
 
 showModifierKeys :: GLFW.ModifierKeys -> String
 showModifierKeys mk =
