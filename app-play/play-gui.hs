@@ -279,7 +279,7 @@ run = do
         { statePicture = images
         , stateState   = st'
         , statePoint   = Nothing
-        , stateHistory = pt : stateHistory s
+        , stateHistory = if st' == st then stateHistory s else pt : stateHistory s
         }
       draw
       else
