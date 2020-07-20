@@ -65,7 +65,7 @@ library:
   - MonadicParser
   - ListDesugar
   - Draw
-  - Eval
+  # - Eval
   source-dirs: src
 
 executables:
@@ -146,7 +146,7 @@ executables:
           - stm
           - transformers
         else:
-          buildable: false 
+          buildable: false
       - condition: flag(static)
         then:
           ghc-options: -static
