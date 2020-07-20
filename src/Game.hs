@@ -56,7 +56,7 @@ encodeCommand :: Command -> Expr
 encodeCommand =
     dispatch
   where
-    dispatch (Accelerate sid (dx, dy))     = fromList [ num 0, num sid, cons (num dx) (num dy) ]
+    dispatch (Accelerate sid (ax, ay))     = fromList [ num 0, num sid, cons (num ax) (num ay) ]
     dispatch (Detonate   sid)              = fromList [ num 1, num sid ]
     dispatch (Shoot      sid (px, py) x3)  = fromList [ num 2, num sid, cons (num px) (num py), x3 ]
 
