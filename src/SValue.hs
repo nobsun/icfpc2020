@@ -41,7 +41,10 @@ svFromNFValue (NFPAp (Num n) []) = SNum n
 svFromNFValue v = error $ "svFromNFValue: " ++ show v
 
 svFromExpr :: Expr -> SValue
-svFromExpr (Prim Nil)                = SNil
-svFromExpr (Ap (Ap (Prim Cons) x) y) = SCons (svFromExpr x) (svFromExpr y)
-svFromExpr (Prim (Num n))            = SNum n
-svFromExpr v = error $ "svFromExpr: " ++ show v
+svFromExpr = either error id . svFromExpr_
+
+svFromExpr_ :: Expr -> Either String SValue
+svFromExpr_ (Prim Nil)                = Right $ SNil
+svFromExpr_ (Ap (Ap (Prim Cons) x) y) = SCons <$> svFromExpr_ x <*> svFromExpr_ y
+svFromExpr_ (Prim (Num n))            = Right $ SNum n
+svFromExpr_ v = Left $ "svFromExpr: " ++ show v
