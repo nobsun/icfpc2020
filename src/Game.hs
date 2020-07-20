@@ -1,4 +1,6 @@
 module Game (
+  Commander,
+
   RequestTag (..),
   create,
   encodeRequest,
@@ -7,6 +9,7 @@ module Game (
   ResponseTag (..),
   StageTag (..),
   StaticInfo (..),
+  playerRole, enemyRole,
   ShipRole (..), oppositeRole,
   ShipInfo (..),
   GameState (..),
@@ -16,6 +19,12 @@ module Game (
   ) where
 
 import Message (Expr (Ap, Prim), Prim (Num, Cons), num, cons, fromList, toList)
+
+---
+
+type Commander = StageTag -> StaticInfo -> GameState -> IO [Command]
+
+---
 
 data RequestTag
   = CREATE
@@ -117,6 +126,12 @@ data StaticInfo =
   , staticX3 :: Expr
   , staticX4 :: Expr
   } deriving Show
+
+playerRole :: StaticInfo -> ShipRole
+playerRole = staticPlayerRole
+
+enemyRole :: StaticInfo -> ShipRole
+enemyRole = oppositeRole . playerRole
 
 decodeStaticInfo :: Expr -> Either String StaticInfo
 decodeStaticInfo x = do

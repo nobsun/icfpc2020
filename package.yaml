@@ -61,10 +61,12 @@ library:
   - Game
   - GameRun
   - SValue
+  - Commander.Further
   other-modules:
   - MonadicParser
   - ListDesugar
   - Draw
+  - Vec
   # - Eval
   source-dirs: src
 
