@@ -48,7 +48,7 @@ commandLoop request_ commander istage staticInfo igstate =
           ships = gstateShips gstate
           myShips    = [ ship | ship <- ships, shipRole ship == myRole ]
 
-      commands <- commander stage staticInfo igstate
+      commands <- commander stage staticInfo gstate
 
       putLn $ "my-role: " ++ show myRole
       putLn $ "enemy-role: " ++ show enemyRole
