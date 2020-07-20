@@ -26,8 +26,18 @@ breaking _stag    staticInfo gstate = do
         | ship <- myShips ]
        -}
 
+      {-
       -- 中心が (0,0) であることを利用して、
       -- 自分の座標位置の signum の逆を与え、
+      -- 中心から遠ざかることを狙う
+      commands_ =
+        [ (Accelerate (shipId ship) (vneg $ vsignum $ shipPos ship), shipPos ship)
+        | ship <- myShips ]
+       -}
+
+      -- 逆というのが違っている?
+      -- 中心が (0,0) であることを利用して、
+      -- 自分の座標位置の signum を与え、
       -- 中心から遠ざかることを狙う
       commands_ =
         [ (Accelerate (shipId ship) (vneg $ vsignum $ shipPos ship), shipPos ship)
