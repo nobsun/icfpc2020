@@ -23,9 +23,11 @@ run server playerKeyStr = do
   listPrint "START response: " startR
 
   case decodeResponse startR of
-    Left e     ->  do
+    Left e                                  ->  do
       putStrLn $ "somethind wrong: " ++ e
       nullLoop request_
+    Right (Finished, _, _)                  ->
+      return ()
     Right (_stage, myRole, (_tick, ships))  ->
       commandLoop request_ myRole ships
 
