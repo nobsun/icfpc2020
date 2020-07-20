@@ -45,7 +45,7 @@ type Demo = RWST Env () State IO
 
 sizeX, sizeY :: Int
 sizeX = 180
-sizeY = 130
+sizeY = 180
 
 --------------------------------------------------------------------------------
 
