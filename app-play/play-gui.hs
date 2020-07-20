@@ -6,20 +6,17 @@ import Control.Concurrent.STM    (TQueue, atomically, newTQueueIO, tryReadTQueue
 import Control.Exception
 import Control.Monad             (foldM, liftM, unless, when, void)
 import Control.Monad.RWS.Strict  (RWST, ask, asks, evalRWST, get, liftIO, modify, put)
-import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
-import Data.List                 (intercalate)
 import Data.Maybe                (isJust, fromJust)
-import Data.IntMap.Lazy (IntMap (..))
+import Data.IntMap.Lazy (IntMap)
 import qualified Data.IntMap.Lazy          as IntMap
 import Data.Maybe                (catMaybes)
 import Options.Applicative
 import System.IO
-import Text.PrettyPrint   hiding ((<>))
 
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.UI.GLFW          as GLFW
 
-import Message (Expr (..), Prim (..))
+import Message (Expr (..))
 import GalaxyTxt (getGalaxyExprs, galaxyKey)
 import qualified Interact
 import qualified Send
@@ -118,7 +115,6 @@ main = do
         height = 480
 
     eventsChan <- newTQueueIO :: IO (TQueue Event)
-    clickChan <- newTQueueIO :: IO (TQueue (Int,Int))
 
     withWindow width height "GLFW-b-demo" $ \win -> do
         GLFW.setErrorCallback               $ Just $ errorCallback           eventsChan
@@ -300,10 +296,6 @@ run = do
     else do
       run
 
-asPixel :: NFEval.NFValue -> (Int,Int)
-asPixel (NFEval.NFPAp Cons [x, NFEval.NFPAp Cons [y, NFEval.NFPAp Nil []]]) = (NFEval.asNum x, NFEval.asNum y)
-asPixel x = error $ "asPixel: " ++ show x
-
 processEvents :: Demo ()
 processEvents = do
     tc <- asks envEventsChan
@@ -384,7 +376,7 @@ processEvent ev =
               y' = round y :: Int
           printEvent "scroll" [show x', show y']
 
-      (EventKey win k scancode ks mk) -> do
+      (EventKey _win k scancode ks mk) -> do
           printEvent "key" [show k, show scancode, show ks, showModifierKeys mk]
 
       (EventChar _ c) ->
