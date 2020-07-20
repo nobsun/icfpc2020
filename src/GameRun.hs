@@ -52,8 +52,9 @@ commandLoop request_ myRole iships =
             | ship <- myShips
             , enemy <- firstTarget ]
 
-          -- 敵の集団から遠ざかる加速度
-          furtherAcc pos vel =
+          -- Accelerate 命令の仕様で、加速度ベクトルは逆向きに与える.
+          -- 敵の集団に近づく加速度
+          closerAcc pos vel =
             foldr (<+>) (0,0)
             [ vsignum (npos <-> (shipPos enemy <+> shipVel enemy))
             | enemy <- enemyShips
@@ -61,7 +62,7 @@ commandLoop request_ myRole iships =
                   _npos = pos <+> vel `vquot` 2]
 
           commands =
-            [ Accelerate (shipId ship) (furtherAcc (shipPos ship) (shipVel ship))
+            [ Accelerate (shipId ship) (closerAcc (shipPos ship) (shipVel ship))
             | ship <- myShips ]
 
       putLn $ "my-role: " ++ show myRole
