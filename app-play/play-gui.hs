@@ -116,7 +116,7 @@ main = do
 
     eventsChan <- newTQueueIO :: IO (TQueue Event)
 
-    withWindow width height "GLFW-b-demo" $ \win -> do
+    withWindow width height "ICFPc 2020" $ \win -> do
         GLFW.setErrorCallback               $ Just $ errorCallback           eventsChan
         GLFW.setWindowPosCallback       win $ Just $ windowPosCallback       eventsChan
         GLFW.setWindowSizeCallback      win $ Just $ windowSizeCallback      eventsChan
@@ -364,6 +364,8 @@ processEvent ev =
               x' = ((round x-(width`div`2))*2*sizeX)`div`width
               y' = ((round y-(height`div`2))*2*sizeY)`div`height
           printEvent "cursor pos" [show x', show y']
+          win <- asks envWindow
+          liftIO $ GLFW.setWindowTitle win $ "ICFPc 2020: cursor = " ++ show (x', y')
 
       (EventCursorEnter _ cs) -> do
           printEvent "cursor enter" [show cs]
