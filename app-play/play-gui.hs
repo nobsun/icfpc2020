@@ -172,7 +172,7 @@ main = do
                     state_
                     { statePoint           = Nothing
                     , stateState           = s
-                    , stateHistory         = history
+                    , stateHistory         = reverse history
                     }
                 Nothing -> return state_
                   
