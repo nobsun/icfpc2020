@@ -5,7 +5,7 @@ module Game (
   Command (..), cmdShipId, encodeCommand,
 
   ResponseTag (..),
-  GameStage (..),
+  StageTag (..),
   ShipRole (..), oppositeRole,
   ShipInfo (..),
   GameState (..),
@@ -73,14 +73,14 @@ decodeResponseCode =
     dispatch 1 = Just GAME_STAGE
     dispatch _ = Nothing
 
-data GameStage
+data StageTag
   = NotYetStarted
   | AlreadyStarted
   | Finished
   deriving (Eq, Show)
 
-decodeGameStage :: Int -> Maybe GameStage
-decodeGameStage =
+decodeStageTag :: Int -> Maybe StageTag
+decodeStageTag =
     dispatch
   where
     dispatch 0 = Just NotYetStarted
@@ -178,7 +178,7 @@ decodeGameState x = do
 
   return GameState { gstateTick = gtick, gstateX1 = x1, gstateShips = ships }
 
-type Response  = (GameStage, ShipRole, GameState)
+type Response  = (StageTag, ShipRole, GameState)
 
 decodeResponse_ :: Expr -> Either String (ResponseTag, Maybe Response)
 decodeResponse_ x = do
@@ -193,7 +193,7 @@ decodeResponse_ x = do
             WRONG_REQUEST                            -> return Nothing
             GAME_STAGE    -> case rexprs of
               Prim (Num stc) : static : state : _ -> do
-                gstage <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeGameStage stc
+                gstage <- maybe (raise $ "unkown game-stage code: " ++ show stc) return $ decodeStageTag stc
                 (_x0, role, _x2, _x3, _x4) <- decodeStaticInfo static
                 gstate  <- decodeGameState state
                 return $ Just (gstage, role, gstate)

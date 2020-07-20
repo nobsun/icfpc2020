@@ -5,7 +5,7 @@ module GameRun (
 import Game
   (RequestTag (..), encodeRequest, decodeResponse, decodeResponse_,
    Command (Shoot, Accelerate), encodeCommand,
-   GameStage (..), GameState (..), ShipInfo (..), ShipRole, oppositeRole, )
+   StageTag (..), GameState (..), ShipInfo (..), ShipRole, oppositeRole, )
 import CurlCmd (gameSend)
 import Message (Expr, num, nil, fromList, toList)
 import Modulate (modulate, demodulate)
