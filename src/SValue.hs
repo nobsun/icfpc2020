@@ -39,3 +39,9 @@ svFromNFValue (NFPAp Nil []) = SNil
 svFromNFValue (NFPAp Cons [x, y]) = SCons (svFromNFValue x) (svFromNFValue y)
 svFromNFValue (NFPAp (Num n) []) = SNum n
 svFromNFValue v = error $ "svFromNFValue: " ++ show v
+
+svFromExpr :: Expr -> SValue
+svFromExpr (Prim Nil)                = SNil
+svFromExpr (Ap (Ap (Prim Cons) x) y) = SCons (svFromExpr x) (svFromExpr y)
+svFromExpr (Prim (Num n))            = SNum n
+svFromExpr v = error $ "svFromExpr: " ++ show v
