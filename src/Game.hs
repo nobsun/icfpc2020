@@ -14,7 +14,7 @@ module Game (
   decodeResponse_,
   ) where
 
-import Message (Expr (Ap, Prim), Prim (Num, Cons), fromList, toList, cons, num)
+import Message (Expr (Ap, Prim), Prim (Num, Cons), num, cons, fromList, toList)
 
 data RequestTag
   = CREATE
@@ -34,11 +34,11 @@ requestCode =
 
 create :: Expr
 create =
-  fromList [ Prim $ Num $ requestCode CREATE ]
+  fromList [ num $ requestCode CREATE ]
 
 encodeRequest :: Int -> RequestTag -> Expr -> Expr
 encodeRequest playerKey rtag dataExpr =
-  fromList [ Prim $ Num $ requestCode rtag, Prim $ Num playerKey, dataExpr ]
+  fromList [ num $ requestCode rtag, num playerKey, dataExpr ]
 
 
 data Command
@@ -56,7 +56,7 @@ encodeCommand :: Command -> Expr
 encodeCommand =
     dispatch
   where
-    dispatch (Accelerate sid (dx, dy))     = fromList [ num 0, num sid, cons (num dx) (num dy) ]
+    dispatch (Accelerate sid (ax, ay))     = fromList [ num 0, num sid, cons (num ax) (num ay) ]
     dispatch (Detonate   sid)              = fromList [ num 1, num sid ]
     dispatch (Shoot      sid (px, py) x3)  = fromList [ num 2, num sid, cons (num px) (num py), x3 ]
 
