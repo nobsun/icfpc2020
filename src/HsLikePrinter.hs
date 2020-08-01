@@ -1,18 +1,46 @@
 module HsLikePrinter (
   pprDefinition,
+  emptyEnv, singleExprEnv,
 
-  Term (..),
+  Term (..), Env,
   pprTop, pprTerm, unAp,
   ) where
 
 import Data.Char (toLower)
 import Data.List (intersperse)
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 import Message (Expr (Ap, Prim), Prim (..))
 
-pprDefinition :: Int -> Expr -> String
-pprDefinition n e =
-  "f" ++ show n ++ " =" ++ pprTop (unAp e)
+type Env = Map Int Expr
+
+emptyEnv :: Env
+emptyEnv = Map.empty
+
+singleExprEnv :: [(Int, Expr)] -> Env
+singleExprEnv ps =
+  Map.fromList
+  [ (n, e)
+  | (n, expr) <- ps
+  , Just e <- [singleExpr expr]
+  ]
+
+singleExpr :: Expr -> Maybe Expr
+singleExpr =
+    single
+  where
+    single e@(Prim _) =
+      Just e
+    single e@(Ap (Ap (Prim Cons) x) (Prim Nil)) = do
+      _ <- single x
+      return e
+    single _ =
+      Nothing
+
+pprDefinition :: Env -> Int -> Expr -> String
+pprDefinition env n e =
+  "f" ++ show n ++ " =" ++ pprTop env (unAp e)
 
 {-
   single primitive term like
@@ -53,56 +81,56 @@ sepBy d = foldr (.) id . intersperse (showString d)
 ss :: String -> ShowS
 ss = showString
 
-pprTop :: Term -> String
-pprTop =
+pprTop :: Env -> Term -> String
+pprTop env =
     ppr
   where
-    ppr (PrimTM p)   =  ss " " . pprPrim p . ss "\n" $ ""
-    ppr (AppTM [PrimTM B, x])    = ss " " . pprB1 x $ ""
-    ppr (AppTM [PrimTM B, x, y]) = ss " " . pprB2 x y $ ""
-    ppr (AppTM (PrimTM B : x : y : ts)) = ss " " . pprBMany x y ts $ ""
-    ppr (AppTM ts)   =  unlines $ "" : map (("  " ++) . ($ "") . pprTerm) ts
-    ppr (ListSYN ts) =  ss " " . pprList ts . ss "\n" $ ""
+    ppr (PrimTM p)   =  ss " " . pprPrim env p . ss "\n" $ ""
+    ppr (AppTM [PrimTM B, x])    = ss " " . pprB1 env x $ ""
+    ppr (AppTM [PrimTM B, x, y]) = ss " " . pprB2 env x y $ ""
+    ppr (AppTM (PrimTM B : x : y : ts)) = ss " " . pprBMany env x y ts $ ""
+    ppr (AppTM ts)   =  unlines $ "" : map (("  " ++) . ($ "") . pprTerm env) ts
+    ppr (ListSYN ts) =  ss " " . pprList env ts . ss "\n" $ ""
 
-pprTerm :: Term -> ShowS
-pprTerm =
+pprTerm :: Env -> Term -> ShowS
+pprTerm env =
     ppr
   where
-    ppr (PrimTM p)  = pprPrim p
-    ppr (AppTM [PrimTM B, x])    = pprB1 x
-    ppr (AppTM [PrimTM B, x, y]) = pprB2 x y
-    ppr (AppTM (PrimTM B : x : y : ts)) = pprBMany x y ts
+    ppr (PrimTM p)  = pprPrim env p
+    ppr (AppTM [PrimTM B, x])    = pprB1 env x
+    ppr (AppTM [PrimTM B, x, y]) = pprB2 env x y
+    ppr (AppTM (PrimTM B : x : y : ts)) = pprBMany env x y ts
     ppr (AppTM ts) = ss "( " . sepBy " " (map ppr ts) . ss " )"
-    ppr (ListSYN ts) =  pprList ts
+    ppr (ListSYN ts) =  pprList env ts
 
-pprB1 :: Term -> ShowS
-pprB1 x = ss "( " . pprTerm x . ss " . )"
+pprB1 :: Env -> Term -> ShowS
+pprB1 env x = ss "( " . pprTerm env x . ss " . )"
 
-pprB2 :: Term -> Term -> ShowS
-pprB2 x y = ss "( " . pprTerm x . ss " . " . pprTerm y . ss " )"
+pprB2 :: Env -> Term -> Term -> ShowS
+pprB2 env x y = ss "( " . pprTerm env x . ss " . " . pprTerm env y . ss " )"
 
-pprBMany :: Term -> Term -> [Term] -> ShowS
-pprBMany x y ts =
-  ss "( " . ss "( " . pprTerm x . ss " . " . pprTerm y . ss " )" . sepBy " " (map pprTerm ts) . ss " )"
+pprBMany :: Env -> Term -> Term -> [Term] -> ShowS
+pprBMany env x y ts =
+  ss "( " . ss "( " . pprTerm env x . ss " . " . pprTerm env y . ss " )" . sepBy " " (map (pprTerm env) ts) . ss " )"
 
-pprList :: [Term] -> ShowS
-pprList ts = ss "[" . sepBy ", " (map pprTerm ts) . ss "]"
+pprList :: Env -> [Term] -> ShowS
+pprList env ts = ss "[" . sepBy ", " (map (pprTerm env) ts) . ss "]"
 
-pprPrim :: Prim -> ShowS
-pprPrim =
-    showString . ppr
+pprPrim :: Env -> Prim -> ShowS
+pprPrim env =
+    ppr
   where
-    ppr (Var n) = "f" ++ show n
-    ppr (Num n) = show n
-    ppr  Succ   = "inc"
-    ppr  Pred   = "dec"
-    ppr  Pow2   = "pwr2"
-    ppr  B      = "(.)"
-    ppr  C      = "flip"
+    ppr (Var n) = maybe (ss "f" . shows n) (pprTerm env . unAp) $ Map.lookup n env
+    ppr (Num n) = shows n
+    ppr  Succ   = ss "inc"
+    ppr  Pred   = ss "dec"
+    ppr  Pow2   = ss "pwr2"
+    ppr  B      = ss "(.)"
+    ppr  C      = ss "flip"
     ppr  p      = lname p
 
-    lname :: Prim -> String
-    lname = map toLower . show
+    lname :: Prim -> ShowS
+    lname = ss . map toLower . show
 
 {-
 _ex1 :: Expr
