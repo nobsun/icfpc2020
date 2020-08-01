@@ -1,6 +1,7 @@
 module HsLikePrinter (
   pprDefinition,
   emptyEnv, singleExprEnv,
+  countFree,
 
   Term (..), Env,
   pprTop, pprTerm, unAp,
@@ -38,6 +39,15 @@ singleExpr =
       return e
     single _ =
       Nothing
+
+countFree :: Env -> Expr -> Int
+countFree env =
+    count
+  where
+    count (Prim (Var n)) =
+      maybe 1 (const 0) $ Map.lookup n env
+    count (Prim  _)      = 0
+    count (Ap e1 e2)     = count e1 + count e2
 
 pprDefinition :: Env -> Int -> Expr -> String
 pprDefinition env n e =
