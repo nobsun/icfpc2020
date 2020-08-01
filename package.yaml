@@ -57,6 +57,7 @@ library:
   - TextParser
   - ImageFile
   - GalaxyTxt
+  - GalaxyPpr
   - GalaxyRun
   - CurlCmd
   - Game
