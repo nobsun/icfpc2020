@@ -8,6 +8,7 @@ module HsLikePrinter (
 
 import Data.Char (toLower)
 import Data.List (intersperse)
+import Data.List.Split (chunksOf)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -86,22 +87,22 @@ pprTop env =
     ppr
   where
     ppr (PrimTM p)   =  ss " " . pprPrim env p . ss "\n" $ ""
-    ppr (AppTM [PrimTM B, x])    = ss " " . pprB1 env x $ ""
-    ppr (AppTM [PrimTM B, x, y]) = ss " " . pprB2 env x y $ ""
-    ppr (AppTM (PrimTM B : x : y : ts)) = ss " " . pprBMany env x y ts $ ""
+    ppr (AppTM [PrimTM B, x])    = ss " " . pprB1 env x . ss "\n" $ ""
+    ppr (AppTM [PrimTM B, x, y]) = ss " " . pprB2 env x y . ss "\n" $ ""
+    ppr (AppTM (PrimTM B : x : y : ts)) = ss " " . pprBMany env x y ts . ss "\n" $ ""
     ppr (AppTM ts)   =  unlines $ "" : map (("  " ++) . ($ "") . pprTerm env) ts
-    ppr (ListSYN ts) =  ss " " . pprList env ts . ss "\n" $ ""
+    ppr (ListSYN ts) =  pprListNL env ts $ ""
 
 pprTerm :: Env -> Term -> ShowS
 pprTerm env =
     ppr
   where
-    ppr (PrimTM p)  = pprPrim env p
+    ppr (PrimTM p)   = pprPrim env p
     ppr (AppTM [PrimTM B, x])    = pprB1 env x
     ppr (AppTM [PrimTM B, x, y]) = pprB2 env x y
     ppr (AppTM (PrimTM B : x : y : ts)) = pprBMany env x y ts
-    ppr (AppTM ts) = ss "( " . sepBy " " (map ppr ts) . ss " )"
-    ppr (ListSYN ts) =  pprList env ts
+    ppr (AppTM ts)   = ss "( " . sepBy " " (map ppr ts) . ss " )"
+    ppr (ListSYN ts) = pprList env ts
 
 pprB1 :: Env -> Term -> ShowS
 pprB1 env x = ss "( " . pprTerm env x . ss " . )"
@@ -115,6 +116,20 @@ pprBMany env x y ts =
 
 pprList :: Env -> [Term] -> ShowS
 pprList env ts = ss "[" . sepBy ", " (map (pprTerm env) ts) . ss "]"
+
+pprListNL :: Map Int Expr -> [Term] -> String -> String
+pprListNL env =
+    fmt . chunksOf 8
+  where
+    fmt  []     = ss " " . ss "[]" . ss "\n"
+    fmt [ts]    = ss " " . ss "[" . sepBy ", " (map (pprTerm env) ts) . ss "]" . ss "\n"
+    fmt (ts:cs) = ss "\n" . ss "  [" . sepBy ", " (map (pprTerm env) ts) . ss "," . ss "\n" .
+                  fmt1 cs
+    fmt1 []      = error "prListNL: fmt1: nil: shound not happen."
+    fmt1 [ts]    = ss "   " . sepBy ", " (map (pprTerm env) ts) . ss "]\n"
+    fmt1 (ts:cs) = ss "   " . sepBy ", " (map (pprTerm env) ts) . ss ",\n" .
+                   fmt1 cs
+
 
 pprPrim :: Env -> Prim -> ShowS
 pprPrim env =

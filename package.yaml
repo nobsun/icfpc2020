@@ -41,6 +41,7 @@ library:
   - attoparsec
   - bytestring
   - containers
+  - split
   - http-conduit >= 2.3
   - transformers
   - process
