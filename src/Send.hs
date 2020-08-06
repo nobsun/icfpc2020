@@ -35,7 +35,7 @@ useCurl = False
 sendString :: String -> IO String
 sendString me = do
   putStrLn $ "send: req: " ++ me
-  let url = "https://icfpc2020-api.testkontur.ru/aliens/send?apiKey=a52c864b55954e25adc32abf69bc22b9"
+  let url = "https://api.pegovka.space/aliens/send"
 
   rbody <-
     if useCurl then do
